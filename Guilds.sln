@@ -1,0 +1,36 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.13.35723.152 d17.13
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CakeBuild", "CakeBuild\CakeBuild.csproj", "{D68C21E8-E3AD-4BF4-8054-336C247EC28E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Guilds", "Guilds\Guilds.csproj", "{89E13B08-407F-44C6-AA4B-08C3CC3E000E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D68C21E8-E3AD-4BF4-8054-336C247EC28E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D68C21E8-E3AD-4BF4-8054-336C247EC28E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D68C21E8-E3AD-4BF4-8054-336C247EC28E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D68C21E8-E3AD-4BF4-8054-336C247EC28E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{89E13B08-407F-44C6-AA4B-08C3CC3E000E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{89E13B08-407F-44C6-AA4B-08C3CC3E000E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{89E13B08-407F-44C6-AA4B-08C3CC3E000E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{89E13B08-407F-44C6-AA4B-08C3CC3E000E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {5BF6EAAF-54AE-4C6B-B9A8-59116C8DB018}
+	EndGlobalSection
+EndGlobal

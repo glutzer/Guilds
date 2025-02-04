@@ -1,0 +1,16 @@
+{
+  "type": "code",
+  "modid": "guilds",
+  "name": "Guilds",
+  "authors":
+  [
+    "nuts"
+  ],
+  "description": "Band together",
+  "version": "1.0.0",
+  "dependencies":
+  {
+    "marelib": "1.1.0",
+    "game": ""
+  }
+}
