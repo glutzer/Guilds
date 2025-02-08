@@ -13,6 +13,7 @@ public static class GuiThemes
 
     private static readonly Dictionary<string, object> cache = new();
 
+    public static Texture Blank => GetOrCreate("blank", () => Texture.Create("guilds:textures/gui/blank.png"));
     public static NineSliceTexture Background => GetOrCreate("background", () => Texture.Create("guilds:textures/gui/background.png").AsNineSlice(14, 14));
     public static NineSliceTexture Button => GetOrCreate("button", () => Texture.Create("guilds:textures/gui/button.png").AsNineSlice(14, 14));
     public static NineSliceTexture ScrollBar => GetOrCreate("scrollbar", () => Texture.Create("guilds:textures/gui/title.png").AsNineSlice(14, 14));

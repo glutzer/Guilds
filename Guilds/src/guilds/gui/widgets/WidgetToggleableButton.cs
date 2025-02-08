@@ -46,8 +46,8 @@ public class WidgetToggleableButton : WidgetBaseToggleableButton
 
         if (state == EnumButtonState.Active)
         {
-            c.Xyz *= 0.8f;
-            f.Xyz *= 0.8f;
+            c.Xyz *= 0.6f;
+            f.Xyz *= 0.6f;
             shader.Uniform("color", c);
             RenderTools.RenderNineSlice(texture, shader, X, Y, Width, Height);
         }

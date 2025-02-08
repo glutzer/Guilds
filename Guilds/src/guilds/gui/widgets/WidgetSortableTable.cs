@@ -44,18 +44,22 @@ public class WidgetSortableTable<T> : Widget
         float totalWeight = columns.Sum(c => c.widthWeight);
         float totalAdvance = 0;
 
+        SetChildSizing(ChildSizing.Height);
+
+        Widget topButtonContainer = new WidgetContainer(this).Percent(0, 0, 1, 1).FixedHeight(12).Alignment(Align.CenterTop);
+
         for (int i = 0; i < columns.Length; i++)
         {
             Column<T> column = columns[i];
 
             float ratio = column.widthWeight / totalWeight;
 
-            new WidgetToggleableButton(this, (down) =>
+            new WidgetToggleableButton(topButtonContainer, (down) =>
             {
                 if (!down) return;
 
                 // Release other buttons.
-                ForEachChild<WidgetToggleableButton>(button =>
+                topButtonContainer.ForEachChild<WidgetToggleableButton>(button =>
                 {
                     button.Release();
                 });
@@ -66,12 +70,13 @@ public class WidgetSortableTable<T> : Widget
             },
             $"{column.name}", new Vector4(0.5f, 0, 0, 1f))
                 .Percent(totalAdvance, 0, ratio, 1)
+                .FixedHeight(12)
                 .Alignment(Align.LeftTop);
 
             totalAdvance += ratio;
         }
 
-        container = new WidgetDummy(this).Percent(0, 0, 1, 1).Alignment(Align.CenterBottom, AlignFlags.OutsideV).SetChildSizing(ChildSizing.Height | ChildSizing.Once);
+        container = new WidgetContainer(topButtonContainer).Percent(0, 0, 1, 1).Alignment(Align.LeftBottom, AlignFlags.OutsideV).SetChildSizing(ChildSizing.Height | ChildSizing.Once);
 
         UpdateData();
     }

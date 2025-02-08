@@ -16,24 +16,35 @@ public class Patches
         [HarmonyPrefix]
         public static bool Prefix(ref string __result, IPlayer forPlayer, BlockPos pos, EnumBlockAccessFlags accessFlag)
         {
-            GridPos chunkPos = new(pos.X / 32, 0, pos.Z / 32);
+            GridPos2d chunkPos = new(pos.X / 32, pos.Z / 32);
 
-            GuildData guildData = MainAPI.GetGameSystem<GuildManager>(forPlayer.Entity.Api.Side).guildData;
+            ClaimManager claimManager = MainAPI.GetGameSystem<ClaimManager>(forPlayer.Entity.Api.Side);
 
-
-            // Get claim data about this chunk.
-
-            // If the data exists and the player is not in that group: no permission.
-            if (data != null)
+            if (claimManager.claimData.TryGetClaim(chunkPos, out GuildClaim claim))
             {
-                if (forPlayer.GetGroup(data.groupUid) == null)
+                Guild? guild = claimManager.guildManager.guildData.GetGuild(claim.guildId);
+                if (guild == null) return false;
+
+                RoleInfo? roleInfo = guild.GetRole(forPlayer.PlayerUID);
+                if (roleInfo == null)
                 {
-                    __result = "Claimed by group";
+                    __result = $"guild {guild.Name}";
+                    return false;
+                }
+
+                if (accessFlag == EnumBlockAccessFlags.Use && !roleInfo.HasPermissions(GuildPerms.UseBlocks))
+                {
+                    __result = $"{guild.Name} has not granted use permissions";
+                    return false;
+                }
+
+                if (accessFlag == EnumBlockAccessFlags.BuildOrBreak && !roleInfo.HasPermissions(GuildPerms.BreakBlocks))
+                {
+                    __result = $"{guild.Name} has not granted build permissions";
                     return false;
                 }
             }
 
-            __result = null;
             return false;
         }
     }

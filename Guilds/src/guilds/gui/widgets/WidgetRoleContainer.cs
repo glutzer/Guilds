@@ -1,10 +1,9 @@
 ﻿using MareLib;
 using OpenTK.Mathematics;
 using System;
-using System.Linq;
 using Vintagestory.API.Common;
 
-namespace Guilds.src.guilds.gui.widgets;
+namespace Guilds;
 
 public class WidgetRoleContainer : Widget
 {
@@ -13,9 +12,9 @@ public class WidgetRoleContainer : Widget
 
     public WidgetRoleContainer(Widget? parent, GuildGui guildGui) : base(parent)
     {
-        if (guildGui.currentGuild == null) return;
+        if (guildGui.selectedGuildId == null) return;
 
-        Guild? guild = guildGui.manager.guildData.GetGuild(guildGui.currentGuild);
+        Guild? guild = guildGui.manager.guildData.GetGuild(guildGui.selectedGuildId);
         if (guild == null) return;
 
         RoleInfo? ownRole = guild.GetRole(guildGui.ownUid);
@@ -58,27 +57,23 @@ public class RoleSelector : Widget
             GuildRequestPacket packet = new()
             {
                 type = EnumGuildPacket.AddRole,
-                guildName = guild.Name
+                guildId = guild.Id
             };
 
             manager.SendPacket(packet);
-        }, "Add Role", GuiThemes.ButtonColor, GuiThemes.ButtonFontColor)
-            .Alignment(Align.CenterTop)
-                .Fixed(-16, 0, 32, 12);
+        }, "Add Role", GuiThemes.ButtonColor, GuiThemes.ButtonFontColor).Alignment(Align.CenterTop).Fixed(-16, 0, 32, 12);
 
         new WidgetGuildButton(this, () =>
         {
             GuildRequestPacket packet = new()
             {
                 type = EnumGuildPacket.RemoveRole,
-                guildName = guild.Name,
-                targetRoleId = selectedRoleIndex
+                guildId = guild.Id,
+                roleId = selectedRoleIndex
             };
 
             manager.SendPacket(packet);
-        }, "Remove Role", GuiThemes.ButtonColor, GuiThemes.ButtonFontColor)
-            .Alignment(Align.CenterTop)
-                .Fixed(16, 0, 32, 12);
+        }, "Remove Role", GuiThemes.ButtonColor, GuiThemes.ButtonFontColor).Alignment(Align.CenterTop).Fixed(16, 0, 32, 12);
 
         for (int i = 0; i < roleSelectionButtons.Length; i++)
         {
@@ -93,10 +88,8 @@ public class RoleSelector : Widget
             {
                 roleSelectionButtons[selectedRoleIndex].Release();
                 selectedRoleIndex = indexOfThis;
-                UpdatePermissions(role, guild.Name);
-            }, role.name, color)
-                .Alignment(Align.CenterTop)
-                .Fixed(0, i * 12 + 24, 64, 12);
+                UpdatePermissions(role, guild.Id);
+            }, role.name, color).Alignment(Align.CenterTop).Fixed(0, (i * 12) + 24, 64, 12);
 
             // Button will never be able to be selected or let up now.
             if (role.authority >= ownRole.authority) roleSelectionButtons[i].LockDown();
@@ -108,11 +101,11 @@ public class RoleSelector : Widget
         gui = guiEvents.gui;
     }
 
-    public void UpdatePermissions(RoleInfo roleInfo, string guildName)
+    public void UpdatePermissions(RoleInfo roleInfo, int guildId)
     {
         permissionSelector?.RemoveSelf();
 
-        new PermissionSelector(this, new RoleData(roleInfo, guildName))
+        new PermissionSelector(this, new RoleData(roleInfo, guildId))
             .Alignment(Align.RightTop, AlignFlags.OutsideH)
             .Percent(0, 0, 1, 1)
             .SetChildSizing(ChildSizing.Height | ChildSizing.Once);
@@ -124,15 +117,15 @@ public class RoleSelector : Widget
 
 public class RoleData
 {
-    public string guildName;
+    public int guildId;
     public int roleId;
     public string newName;
     public GuildPerms guildPerms;
     public int authority;
 
-    public RoleData(RoleInfo roleInfo, string guildName)
+    public RoleData(RoleInfo roleInfo, int guildId)
     {
-        this.guildName = guildName;
+        this.guildId = guildId;
         roleId = roleInfo.id;
         newName = roleInfo.name;
         guildPerms = roleInfo.GetPermissions();
@@ -188,7 +181,7 @@ public class PermissionSelector : Widget
         {
             RoleChangePacket packet = new()
             {
-                guildName = roleData.guildName,
+                guildId = roleData.guildId,
                 roleId = roleData.roleId,
                 newName = roleData.newName,
                 newPerms = roleData.guildPerms,

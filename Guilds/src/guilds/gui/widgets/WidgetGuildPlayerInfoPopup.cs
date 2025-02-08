@@ -19,11 +19,9 @@ public class WidgetGuildPlayerInfoPopup : Widget
         int heightOffset = -8;
 
         GuildManager manager = MainAPI.GetGameSystem<GuildManager>(EnumAppSide.Client);
-        string? currentGuild = manager.guildGui?.currentGuild;
+        Guild? guild = manager.guildData.GetGuild(manager.guildGui?.selectedGuildId ?? -1);
 
-        if (currentGuild != null
-            && manager.guildData.GetGuild(currentGuild) is Guild guild
-            && guild.GetRole(MainAPI.Capi.World.Player.PlayerUID) is RoleInfo ownRole)
+        if (guild != null && guild.GetRole(MainAPI.Capi.World.Player.PlayerUID) is RoleInfo ownRole)
         {
             if (guild.GetRole(playerUid) is RoleInfo targetRole)
             {
@@ -32,7 +30,7 @@ public class WidgetGuildPlayerInfoPopup : Widget
                     new WidgetGuildButton(this, () =>
                     {
                         RemoveSelf();
-                    }, $"Kick From {currentGuild}", new Vector4(0.3f, 0, 0, 1), Vector4.One).Alignment(Align.LeftTop).FixedSize(32, 8).FixedY(heightOffset += 8);
+                    }, $"Kick From {guild.Name}", new Vector4(0.3f, 0, 0, 1), Vector4.One).Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
                 }
 
                 if (ownRole.HasPermissions(GuildPerms.Promote) && ownRole.authority > targetRole.authority)
@@ -40,7 +38,7 @@ public class WidgetGuildPlayerInfoPopup : Widget
                     new WidgetGuildButton(this, () =>
                     {
                         RemoveSelf();
-                    }, "Set Role", new Vector4(0.3f, 0, 0, 1), Vector4.One).Alignment(Align.LeftTop).FixedSize(32, 8).FixedY(heightOffset += 8);
+                    }, "Set Role", new Vector4(0.3f, 0, 0, 1), Vector4.One).Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
                 }
             }
 
@@ -53,13 +51,13 @@ public class WidgetGuildPlayerInfoPopup : Widget
                         GuildRequestPacket packet = new()
                         {
                             targetPlayer = playerUid,
-                            guildName = currentGuild,
+                            guildId = guild.Id,
                             type = EnumGuildPacket.CancelInvite
                         };
 
                         manager.SendPacket(packet);
                         RemoveSelf();
-                    }, $"Cancel {currentGuild} Invite", new Vector4(0.3f, 0, 0, 1), Vector4.One).Alignment(Align.LeftTop).FixedSize(32, 8).FixedY(heightOffset += 8);
+                    }, $"Cancel {guild.Name} Invite", new Vector4(0.3f, 0, 0, 1), Vector4.One).Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
                 }
                 else
                 {
@@ -68,13 +66,13 @@ public class WidgetGuildPlayerInfoPopup : Widget
                         GuildRequestPacket packet = new()
                         {
                             targetPlayer = playerUid,
-                            guildName = currentGuild,
+                            guildId = guild.Id,
                             type = EnumGuildPacket.Invite
                         };
 
                         manager.SendPacket(packet);
                         RemoveSelf();
-                    }, $"Invite To {currentGuild}", new Vector4(0.3f, 0, 0, 1), Vector4.One).Alignment(Align.LeftTop).FixedSize(32, 8).FixedY(heightOffset += 8);
+                    }, $"Invite To {guild.Name}", new Vector4(0.3f, 0, 0, 1), Vector4.One).Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
                 }
             }
         }

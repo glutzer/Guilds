@@ -1,5 +1,6 @@
 ﻿using MareLib;
 using Newtonsoft.Json;
+using OpenTK.Mathematics;
 using ProtoBuf;
 using System.Collections.Generic;
 using System.IO;
@@ -7,6 +8,7 @@ using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Config;
 using Vintagestory.API.Server;
+using Vintagestory.API.Util;
 using Vintagestory.Client;
 
 namespace Guilds;
@@ -14,7 +16,7 @@ namespace Guilds;
 [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
 public class RoleChangePacket
 {
-    public string? guildName;
+    public int guildId;
     public int roleId;
     public string? newName;
     public int newAuthority;
@@ -33,7 +35,8 @@ public enum EnumGuildPacket
     RemoveRole,
     Create,
     Leave,
-    Disband
+    Disband,
+    RepGuild
 }
 
 [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
@@ -41,33 +44,47 @@ public class GuildRequestPacket
 {
     public EnumGuildPacket type;
     public string? targetPlayer;
-    public int targetRoleId;
-    public string? guildName;
+    public int roleId;
+    public int guildId;
     public byte[]? data;
+
+    public T? ReadData<T>()
+    {
+        if (data == null) return default;
+        return SerializerUtil.Deserialize<T>(data);
+    }
 }
 
 [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
 public class FullGuildPacket
 {
-    public Dictionary<string, Guild> guilds = new();
+    public Dictionary<int, Guild> guilds = new();
 }
 
 [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
 public class FullMembersPacket
 {
-    public Dictionary<string, HashSet<string>> members = new();
+    public Dictionary<string, HashSet<int>> members = new();
 }
 
 [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
 public class FullInvitesPacket
 {
-    public Dictionary<string, HashSet<string>> pendingInvites = new();
+    public Dictionary<string, HashSet<int>> pendingInvites = new();
 }
 
 [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
 public class FullMetricsPacket
 {
     public Dictionary<string, PlayerMetrics> metrics = new();
+}
+
+[ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
+public class GuildInfoPacket
+{
+    public int guildId;
+    public string? name;
+    public Vector3 color;
 }
 
 /// <summary>
@@ -144,6 +161,7 @@ public class GuildManager : NetworkedGameSystem
         channel.RegisterMessageType<FullInvitesPacket>();
         channel.RegisterMessageType<FullMetricsPacket>();
         channel.RegisterMessageType<RoleChangePacket>();
+        channel.RegisterMessageType<GuildInfoPacket>();
 
         channel.SetMessageHandler<GuildRequestPacket>(HandleRequestFromServer);
         channel.SetMessageHandler<GuildData>(HandleFullDataSync);
@@ -184,15 +202,33 @@ public class GuildManager : NetworkedGameSystem
         channel.RegisterMessageType<FullInvitesPacket>();
         channel.RegisterMessageType<FullMetricsPacket>();
         channel.RegisterMessageType<RoleChangePacket>();
+        channel.RegisterMessageType<GuildInfoPacket>();
 
         channel.SetMessageHandler<GuildRequestPacket>(HandleRequestFromClient);
 
         channel.SetMessageHandler<RoleChangePacket>((player, p) =>
         {
-            if (guildData.UpdateRole(player, p) == GuildStatus.Success)
+            if (guildData.UpdateRole(player, p))
             {
-                guildData.SyncGuild(this, p.guildName!);
+                Guild? guild = guildData.GetGuild(p.guildId);
+                if (guild != null) GuildData.SyncGuild(this, guild);
             }
+        });
+
+        channel.SetMessageHandler<GuildInfoPacket>((player, p) =>
+        {
+            if (p.name == null) return;
+
+            Guild? guild = guildData.GetGuild(p.guildId);
+            if (guild == null) return;
+
+            RoleInfo? roleInfo = guild.GetRole(player.PlayerUID);
+            if (roleInfo == null || !roleInfo.HasPermissions(GuildPerms.ManageGuildInfo)) return;
+
+            guild.ChangeName(p.name);
+            guild.SetColor(p.color);
+
+            guildData.SyncGuilds(this);
         });
     }
 
@@ -212,22 +248,20 @@ public class GuildManager : NetworkedGameSystem
     /// </summary>
     public void HandleRequestFromServer(GuildRequestPacket packet)
     {
-        if (packet.guildName == null) return;
-
         if (packet.type is EnumGuildPacket.Invite or EnumGuildPacket.CancelInvite)
         {
             IPlayer clientPlayer = MainAPI.Capi.World.Player;
 
             if (packet.type == EnumGuildPacket.Invite)
             {
-                if (guildData.AddClientInvite(clientPlayer.PlayerUID, packet.guildName))
+                if (guildData.AddClientInvite(clientPlayer.PlayerUID, packet.guildId))
                 {
                     guildGui?.RefreshPage();
                 }
             }
             else if (packet.type == EnumGuildPacket.CancelInvite)
             {
-                if (guildData.RemoveClientInvite(clientPlayer.PlayerUID, packet.guildName))
+                if (guildData.RemoveClientInvite(clientPlayer.PlayerUID, packet.guildId))
                 {
                     guildGui?.RefreshPage();
                 }
@@ -248,12 +282,14 @@ public class GuildManager : NetworkedGameSystem
     public void HandleRequestFromClient(IServerPlayer player, GuildRequestPacket packet)
     {
         string playerUid = player.PlayerUID;
-        if (packet.guildName == null) return;
 
         // Create.
         if (packet.type == EnumGuildPacket.Create)
         {
-            if (guildData.CreateGuild(packet.guildName, player) == GuildStatus.Success)
+            string? name = packet.ReadData<string>();
+            if (name == null) return;
+
+            if (guildData.CreateGuild(name, player))
             {
                 guildData.SyncMembers(this);
                 guildData.SyncGuilds(this);
@@ -262,9 +298,31 @@ public class GuildManager : NetworkedGameSystem
             return;
         }
 
+        Guild? guild = guildData.GetGuild(packet.guildId);
+
+        if (packet.type == EnumGuildPacket.RepGuild)
+        {
+            PlayerMetrics metrics = guildData.GetMetrics(player);
+
+            if (guild == null)
+            {
+                metrics.reppedGuildId = -1;
+                guildData.SyncMetrics(this);
+            }
+            else if (guild.HasMember(playerUid))
+            {
+                metrics.reppedGuildId = packet.guildId;
+                guildData.SyncMetrics(this);
+            }
+
+            return;
+        }
+
+        if (guild == null) return;
+
         if (packet.type == EnumGuildPacket.AcceptInvite)
         {
-            if (guildData.AcceptInvite(playerUid, packet.guildName) is GuildStatus.Success)
+            if (guildData.AcceptInvite(playerUid, guild))
             {
                 guildData.SyncMembers(this);
                 guildData.SyncGuilds(this);
@@ -273,7 +331,7 @@ public class GuildManager : NetworkedGameSystem
             GuildRequestPacket cancelInvitePacket = new()
             {
                 type = EnumGuildPacket.CancelInvite,
-                guildName = packet.guildName
+                guildId = packet.guildId
             };
 
             SendPacket(cancelInvitePacket, player);
@@ -283,32 +341,26 @@ public class GuildManager : NetworkedGameSystem
 
         if (packet.type == EnumGuildPacket.CancelInvite && packet.targetPlayer == player.PlayerUID)
         {
-            if (guildData.RemoveInvite(playerUid, packet.guildName, playerUid) == GuildStatus.Success)
+            if (guildData.RemoveInvite(playerUid, guild, playerUid))
             {
                 guildData.SyncMembers(this);
-                guildData.SyncGuild(this, packet.guildName);
+                GuildData.SyncGuild(this, guild);
             }
 
             GuildRequestPacket cancelInvitePacket = new()
             {
                 type = EnumGuildPacket.CancelInvite,
-                guildName = packet.guildName
+                guildId = packet.guildId
             };
 
             SendPacket(cancelInvitePacket, player);
         }
 
-        Guild? guild = guildData.GetGuild(packet.guildName);
-        if (guild == null) return;
-
-        RoleInfo? role = guild.GetRole(playerUid);
-        if (role == null) return;
-
         if (packet.type == EnumGuildPacket.AddRole)
         {
-            if (guildData.AddRole(player, packet.guildName) == GuildStatus.Success)
+            if (GuildData.AddRole(player, guild))
             {
-                guildData.SyncGuild(this, packet.guildName);
+                GuildData.SyncGuild(this, guild);
             }
 
             return;
@@ -316,33 +368,32 @@ public class GuildManager : NetworkedGameSystem
 
         if (packet.type == EnumGuildPacket.RemoveRole)
         {
-            if (guildData.RemoveRole(player, packet.guildName, packet.targetRoleId) == GuildStatus.Success)
+            if (GuildData.RemoveRole(player, guild, packet.roleId))
             {
-                guildData.SyncGuild(this, packet.guildName);
+                GuildData.SyncGuild(this, guild);
             }
 
             return;
         }
 
-        // Disband.
         if (packet.type == EnumGuildPacket.Disband)
         {
             RoleInfo? roleInfo = guild.GetRole(playerUid);
             if (roleInfo == null || roleInfo.id != 1) return; // Not founder.
 
-            if (guildData.DisbandGuild(packet.guildName) == GuildStatus.Success)
+            if (guildData.DisbandGuild(guild))
             {
                 guildData.SyncMembers(this);
                 guildData.SyncGuilds(this);
+                MainAPI.GetGameSystem<ClaimManager>(EnumAppSide.Server).OnGuildDisbanded(packet.guildId);
             }
 
             return;
         }
 
-        // Leave.
         if (packet.type == EnumGuildPacket.Leave)
         {
-            if (guildData.RemovePlayerFromGuild(playerUid, packet.guildName) == GuildStatus.Success)
+            if (guildData.RemovePlayerFromGuild(playerUid, guild))
             {
                 guildData.SyncMembers(this);
                 guildData.SyncGuilds(this);
@@ -351,15 +402,16 @@ public class GuildManager : NetworkedGameSystem
             return;
         }
 
+        // All packets from here target another player.
         if (packet.targetPlayer == null) return;
         if (!guildData.IsValidUid(packet.targetPlayer)) return;
 
         if (packet.type is EnumGuildPacket.Invite)
         {
-            if (guildData.AddInvite(playerUid, packet.guildName, packet.targetPlayer) == GuildStatus.Success)
+            if (guildData.AddInvite(playerUid, guild, packet.targetPlayer))
             {
                 guildData.SyncInvites(this);
-                guildData.SyncGuild(this, packet.guildName);
+                GuildData.SyncGuild(this, guild);
             }
 
             return;
@@ -367,10 +419,10 @@ public class GuildManager : NetworkedGameSystem
 
         if (packet.type is EnumGuildPacket.CancelInvite)
         {
-            if (guildData.RemoveInvite(playerUid, packet.guildName, packet.targetPlayer) == GuildStatus.Success)
+            if (guildData.RemoveInvite(playerUid, guild, packet.targetPlayer))
             {
                 guildData.SyncInvites(this);
-                guildData.SyncGuild(this, packet.guildName);
+                GuildData.SyncGuild(this, guild);
             }
 
             return;
@@ -378,7 +430,7 @@ public class GuildManager : NetworkedGameSystem
 
         if (packet.type == EnumGuildPacket.Kick)
         {
-            if (guildData.KickPlayer(playerUid, packet.targetPlayer, packet.guildName) == GuildStatus.Success)
+            if (guildData.KickPlayer(playerUid, packet.targetPlayer, guild))
             {
                 guildData.SyncMembers(this);
                 guildData.SyncGuilds(this);
@@ -391,7 +443,7 @@ public class GuildManager : NetworkedGameSystem
         {
             if (packet.targetPlayer == null) return;
 
-            if (guildData.ChangeRole(playerUid, packet.targetPlayer, packet.guildName, packet.targetRoleId) == GuildStatus.Success)
+            if (GuildData.ChangeRole(playerUid, packet.targetPlayer, guild, packet.roleId))
             {
                 guildData.SyncGuilds(this);
             }
@@ -418,7 +470,7 @@ public class GuildManager : NetworkedGameSystem
 
         guildData ??= new GuildData();
 
-        guildData.VerifyDataIntegrity();
+        guildData.VerifyDataIntegrity((ICoreServerAPI)api);
 
         //byte[]? data = ((ICoreServerAPI)api).WorldManager.SaveGame.GetData("guilds");
 
@@ -444,7 +496,7 @@ public class GuildManager : NetworkedGameSystem
             NullValueHandling = NullValueHandling.Ignore
         };
 
-        guildData.VerifyDataIntegrity();
+        guildData.VerifyDataIntegrity((ICoreServerAPI)api);
 
         string guildFile = Path.Combine(GamePaths.DataPath, "guilds.json");
         File.WriteAllText(guildFile, JsonConvert.SerializeObject(guildData, settings));

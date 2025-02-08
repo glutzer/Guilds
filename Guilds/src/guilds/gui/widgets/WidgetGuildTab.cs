@@ -59,7 +59,7 @@ public class WidgetGuildTab : WidgetBaseToggleableButton
 
         Vector4 c = color;
 
-        if (state == EnumButtonState.Hovered || state == EnumButtonState.Active)
+        if (state is EnumButtonState.Hovered or EnumButtonState.Active)
         {
             c.Xyz *= 1.2f;
             f.Xyz *= 1.2f;

@@ -1,26 +1,18 @@
 ﻿using MareLib;
 using Newtonsoft.Json;
+using OpenTK.Mathematics;
 using ProtoBuf;
+using ProtoBuf.Meta;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
+using Vintagestory.API.Datastructures;
 using Vintagestory.API.Server;
 
 namespace Guilds;
-
-[ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
-public enum GuildStatus
-{
-    Success,
-    Error,
-    GuildNotFound,
-    NotInGuild,
-    AlreadyInGuild,
-    GuildExists,
-    NoPermission
-}
 
 [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
 [Flags]
@@ -109,94 +101,91 @@ public class RoleInfo
 [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
 public class GuildData
 {
-    /// <summary>
-    /// Guild name to guild. (All guilds stored in here.
-    /// </summary>
     [JsonProperty]
-    private Dictionary<string, Guild> guilds = new();
+    private Dictionary<int, Guild> guilds = new();
+
+    [JsonProperty]
+    private int nextGuildId = 0;
 
     /// <summary>
-    /// Player uid to guilds they're in for indexing.
+    /// Map of player uid to every guild id they are in.
     /// </summary>
     [JsonProperty]
-    private Dictionary<string, HashSet<string>> members = new();
+    private Dictionary<string, HashSet<int>> playerToGuilds = new();
 
     /// <summary>
-    /// Player uid to guilds they are currently invited to.
+    /// Player uid to guilds they are invited to.
+    /// </summary>
     [JsonProperty]
-    private Dictionary<string, HashSet<string>> pendingInvites = new();
+    private Dictionary<string, HashSet<int>> playerToInvites = new();
 
     /// <summary>
     /// Metrics for every player that has logged in, by uid.
     /// </summary>
     [JsonProperty]
-    private Dictionary<string, PlayerMetrics> metrics = new();
-
-    public IEnumerable<PlayerMetrics> AllMetrics => metrics.Values;
+    private Dictionary<string, PlayerMetrics> playerMetrics = new();
+    public IEnumerable<PlayerMetrics> AllMetrics => playerMetrics.Values;
 
     public bool IsValidUid(string uid)
     {
-        return metrics.ContainsKey(uid);
+        // If a player is not in the metrics, he is not registered on the server.
+        return playerMetrics.ContainsKey(uid);
     }
 
     /// <summary>
     /// When saving and loading on the server, verify data is correct.
     /// </summary>
-    public void VerifyDataIntegrity()
+    public void VerifyDataIntegrity(ICoreServerAPI sapi)
     {
-        // Set offline to all metrics.
+        guilds ??= new Dictionary<int, Guild>();
+
+        // Set offline to players not here.
         foreach (PlayerMetrics metrics in AllMetrics)
         {
-            metrics.isOnline = false;
+            if (sapi.World.PlayerByUid(metrics.uid) == null)
+            {
+                metrics.isOnline = false;
+            }
         }
 
         // Remove all values from members with an empty or null hash set.
-        foreach (string playerUid in members.Keys.ToArray())
+        foreach (string playerUid in playerToGuilds.Keys.ToArray())
         {
-            if (members[playerUid].Count == 0)
+            if (playerToGuilds[playerUid].Count == 0)
             {
-                members.Remove(playerUid);
+                playerToGuilds.Remove(playerUid);
             }
         }
 
-        foreach (string playerUid in pendingInvites.Keys.ToArray())
+        foreach (string playerUid in playerToInvites.Keys.ToArray())
         {
-            if (pendingInvites[playerUid].Count == 0)
+            if (playerToInvites[playerUid].Count == 0)
             {
-                pendingInvites.Remove(playerUid);
-            }
-        }
-
-        // Check if any guild has 0 members, remove it.
-        foreach (string guildName in guilds.Keys.ToArray())
-        {
-            if (guilds[guildName].MemberCount == 0)
-            {
-                guilds.Remove(guildName);
+                playerToInvites.Remove(playerUid);
             }
         }
 
         // If a member is not in any of the guilds, remove it from the set.
-        foreach (KeyValuePair<string, HashSet<string>> kvp in members)
+        foreach (KeyValuePair<string, HashSet<int>> kvp in playerToGuilds)
         {
-            foreach (string guildName in kvp.Value)
+            foreach (int guildId in kvp.Value)
             {
-                Guild? guild = GetGuild(guildName);
+                Guild? guild = GetGuild(guildId);
                 if (guild == null)
                 {
-                    kvp.Value.Remove(guildName);
+                    kvp.Value.Remove(guildId);
                     continue;
                 }
 
                 if (!guild.HasMember(kvp.Key))
                 {
-                    kvp.Value.Remove(guildName);
+                    kvp.Value.Remove(guildId);
                 }
             }
         }
 
         List<string> toRemove = new();
-        foreach (KeyValuePair<string, PlayerMetrics> kvp in metrics)
+        foreach (KeyValuePair<string, PlayerMetrics> kvp in playerMetrics)
         {
             // Check if over 6 months since last login.
             if (kvp.Value.lastOnline + 15552000 < DateTimeOffset.UtcNow.ToUnixTimeSeconds())
@@ -213,369 +202,316 @@ public class GuildData
         }
     }
 
-    public GuildStatus AddInvite(string playerUid, string guildName, string invitedUid)
+    #region Invites
+
+    public HashSet<int> GetPlayersInvites(string playerUid)
     {
-        Guild? guild = GetGuild(guildName);
-        if (guild == null) return GuildStatus.GuildNotFound;
+        if (!playerToInvites.TryGetValue(playerUid, out HashSet<int>? guildList) || guildList == null)
+        {
+            guildList = new HashSet<int>();
+            playerToInvites[playerUid] = guildList;
+        }
 
-        RoleInfo? role = GetPlayersRole(guildName, playerUid);
-        if (role == null) return GuildStatus.Error;
+        return guildList;
+    }
 
-        if (!role.HasPermissions(GuildPerms.Invite)) return GuildStatus.NoPermission;
+    public bool AddInvite(string playerUid, Guild guild, string invitedUid)
+    {
+        RoleInfo? role = guild.GetRole(playerUid);
+        if (role == null) return false;
 
-        HashSet<string> invites = GetPlayersInvites(invitedUid);
+        if (!role.HasPermissions(GuildPerms.Invite)) return false;
 
-        invites.Add(guild.Name);
+        HashSet<int> invites = GetPlayersInvites(invitedUid);
+
+        invites.Add(guild.Id);
         guild.AddInvite(invitedUid);
 
-        return GuildStatus.Success;
+        return true;
     }
 
-    public GuildStatus AcceptInvite(string invitedUid, string guildName)
+    public bool RemoveInvite(string playerUid, Guild guild, string invitedUid)
     {
-        Guild? guild = GetGuild(guildName);
-        if (guild == null) return GuildStatus.GuildNotFound;
-
-        HashSet<string> invites = GetPlayersInvites(invitedUid);
-
-        if (!invites.Remove(guildName))
-        {
-            guild.RemoveInvite(invitedUid);
-            return GuildStatus.Error;
-        }
-
-        return AddPlayerToGuild(invitedUid, guild.Name);
-    }
-
-    /// <summary>
-    /// Removes an invite, allows any permission if to self.
-    /// </summary>
-    public GuildStatus RemoveInvite(string playerUid, string guildName, string invitedUid)
-    {
-        Guild? guild = GetGuild(guildName);
-        if (guild == null) return GuildStatus.GuildNotFound;
-
         if (playerUid != invitedUid)
         {
-            RoleInfo? role = GetPlayersRole(guildName, playerUid);
-            if (role == null) return GuildStatus.Error;
+            RoleInfo? role = guild.GetRole(playerUid);
+            if (role == null) return false;
 
-            if (!role.HasPermissions(GuildPerms.Invite)) return GuildStatus.NoPermission;
+            if (!role.HasPermissions(GuildPerms.Invite)) return false;
         }
 
-        HashSet<string> invites = GetPlayersInvites(invitedUid);
+        HashSet<int> invites = GetPlayersInvites(invitedUid);
 
-        invites.Remove(guild.Name);
+        invites.Remove(guild.Id);
         guild.RemoveInvite(invitedUid);
 
-        return GuildStatus.Success;
+        return true;
     }
 
-    public bool AddClientInvite(string playerUid, string guildName)
+    public bool AcceptInvite(string invitedUid, Guild guild)
     {
-        HashSet<string> invites = GetPlayersInvites(playerUid);
-        return invites.Add(guildName);
-    }
+        HashSet<int> invites = GetPlayersInvites(invitedUid);
 
-    public bool RemoveClientInvite(string playerUid, string guildName)
-    {
-        HashSet<string> invites = GetPlayersInvites(playerUid);
-        return invites.Remove(guildName);
-    }
-
-    public HashSet<string> GetPlayersGuilds(string playerUid)
-    {
-        if (!members.TryGetValue(playerUid, out HashSet<string>? guildList))
+        if (!invites.Remove(guild.Id))
         {
-            guildList = new HashSet<string>();
-            members[playerUid] = guildList;
+            guild.RemoveInvite(invitedUid);
+            return false;
         }
 
-        if (guildList == null)
-        {
-            guildList = new HashSet<string>();
-            members[playerUid] = guildList;
-        }
-
-        return guildList;
+        return AddPlayerToGuild(invitedUid, guild);
     }
 
-    public HashSet<string> GetPlayersInvites(string playerUid)
+    public bool AddClientInvite(string playerUid, int guildId)
     {
-        if (!pendingInvites.TryGetValue(playerUid, out HashSet<string>? guildList))
-        {
-            guildList = new HashSet<string>();
-            pendingInvites[playerUid] = guildList;
-        }
+        HashSet<int> invites = GetPlayersInvites(playerUid);
+        return invites.Add(guildId);
+    }
 
-        if (guildList == null)
+    public bool RemoveClientInvite(string playerUid, int guildId)
+    {
+        HashSet<int> invites = GetPlayersInvites(playerUid);
+        return invites.Remove(guildId);
+    }
+
+    #endregion
+
+    #region Guilds
+
+    public HashSet<int> GetPlayersGuilds(string playerUid)
+    {
+        if (!playerToGuilds.TryGetValue(playerUid, out HashSet<int>? guildList) || guildList == null)
         {
-            guildList = new HashSet<string>();
-            pendingInvites[playerUid] = guildList;
+            guildList = new HashSet<int>();
+            playerToGuilds[playerUid] = guildList;
         }
 
         return guildList;
     }
 
-    public GuildStatus UpdateRole(IServerPlayer player, RoleChangePacket packet)
+    public Guild? GetGuild(int guildId)
     {
-        if (packet.guildName == null || packet.newName == null) return GuildStatus.Error;
+        if (guilds.TryGetValue(guildId, out Guild? guild))
+        {
+            return guild;
+        }
 
-        Guild? guild = GetGuild(packet.guildName);
-        if (guild == null) return GuildStatus.GuildNotFound;
+        return null;
+    }
 
-        RoleInfo? role = GetPlayersRole(packet.guildName, player);
-        if (role == null) return GuildStatus.Error;
+    public bool AddPlayerToGuild(string playerUid, Guild guild)
+    {
+        HashSet<int> guilds = GetPlayersGuilds(playerUid);
+        guilds.Add(guild.Id);
+        guild.AddMember(playerUid);
 
-        if (!role.HasPermissions(GuildPerms.ManageRoles)) return GuildStatus.NoPermission;
+        return true;
+    }
+
+    public bool RemovePlayerFromGuild(string playerUid, Guild guild)
+    {
+        RoleInfo? role = guild.GetRole(playerUid);
+        if (role?.id == 1) return false;
+
+        HashSet<int> guilds = GetPlayersGuilds(playerUid);
+
+        if (!guilds.Contains(guild.Id))
+        {
+            return false;
+        }
+
+        guilds.Remove(guild.Id);
+        guild.RemoveMember(playerUid);
+
+        PlayerMetrics? metrics = GetMetrics(playerUid);
+        if (metrics != null && metrics.reppedGuildId == guild.Id)
+        {
+            metrics.reppedGuildId = -1;
+            SyncMetrics(MainAPI.GetGameSystem<GuildManager>(EnumAppSide.Server)); // Until more specific updates are in.
+        }
+
+        return true;
+    }
+
+    public bool IsGuildNameAllowed(string guildName)
+    {
+        if (guilds.Values.Any(g => g.Name == guildName)) return false;
+        if (guildName.Length is < 3 or > 32) return false;
+
+        return true;
+    }
+
+    public bool CreateGuild(string guildName, IPlayer foundingPlayer)
+    {
+        // Guild exists with this name already.
+        if (!IsGuildNameAllowed(guildName)) return false;
+
+        if (GetPlayersGuilds(foundingPlayer.PlayerUID).Count > 10) return false; // Too many guilds.
+
+        Guild guild = new(foundingPlayer, guildName, nextGuildId);
+        nextGuildId++;
+        guilds[guild.Id] = guild;
+
+        Random rand = new();
+        Vector3 color = new(rand.NextSingle(), rand.NextSingle(), rand.NextSingle());
+        color.X = MathF.Round(color.X, 2);
+        color.Y = MathF.Round(color.Y, 2);
+        color.Z = MathF.Round(color.Z, 2);
+        guild.SetColor(color);
+
+        GetPlayersGuilds(foundingPlayer.PlayerUID).Add(guild.Id);
+
+        return true;
+    }
+
+    public bool DisbandGuild(Guild guild)
+    {
+        foreach (MembershipInfo info in guild.MemberInfo)
+        {
+            GetPlayersGuilds(info.playerUid).Remove(guild.Id);
+        }
+
+        foreach (string invite in guild.GetInvites())
+        {
+            GetPlayersInvites(invite).Remove(guild.Id);
+        }
+
+        guilds.Remove(guild.Id);
+
+        return true;
+    }
+
+    public bool KickPlayer(string actingUid, string targetPlayerUid, Guild guild)
+    {
+        RoleInfo? actingRole = guild.GetRole(actingUid);
+        RoleInfo? targetPlayerRole = guild.GetRole(targetPlayerUid);
+
+        if (actingRole == null || targetPlayerRole == null) return false;
+        if (targetPlayerRole.authority >= actingRole.authority || !actingRole.HasPermissions(GuildPerms.Kick)) return false;
+
+        // Remove player from guild.
+        return RemovePlayerFromGuild(targetPlayerUid, guild);
+    }
+
+    #endregion
+
+    #region Roles
+
+    public static bool AddRole(IServerPlayer player, Guild guild)
+    {
+        RoleInfo? role = guild.GetRole(player.PlayerUID);
+        if (role == null) return false;
+
+        if (!role.HasPermissions(GuildPerms.ManageRoles)) return false;
+
+        guild.AddRole();
+
+        return true;
+    }
+
+    public static bool RemoveRole(IServerPlayer player, Guild guild, int roleId)
+    {
+        RoleInfo? role = guild.GetRole(player.PlayerUID);
+        if (role == null) return false;
+
+        if (!role.HasPermissions(GuildPerms.ManageRoles)) return false;
+
+        RoleInfo? targetRole = guild.GetRole(roleId);
+        if (targetRole == null || targetRole.authority >= role.authority) return false;
+
+        return guild.RemoveRole(roleId);
+    }
+
+    public bool UpdateRole(IServerPlayer player, RoleChangePacket packet)
+    {
+        if (packet.newName == null) return false;
+
+        Guild? guild = GetGuild(packet.guildId);
+        if (guild == null) return false;
+
+        RoleInfo? role = guild.GetRole(player.PlayerUID);
+        if (role == null) return false;
+
+        if (!role.HasPermissions(GuildPerms.ManageRoles)) return false;
 
         if (packet.newAuthority >= role.authority) packet.newAuthority = role.authority - 1;
 
         RoleInfo? targetRole = guild.GetRole(packet.roleId);
-        if (targetRole == null) return GuildStatus.Error;
+        if (targetRole == null) return false;
 
-        if (targetRole.authority >= role.authority) return GuildStatus.NoPermission;
+        if (targetRole.authority >= role.authority) return false;
 
         targetRole.ChangeRole(packet);
-        return GuildStatus.Success; // Success, re-send the guild.
+        return true;
     }
 
-    /// <summary>
-    /// Add a new role with a random name.
-    /// </summary>
-    public GuildStatus AddRole(IServerPlayer player, string guildName)
+    public static bool ChangeRole(string actingUid, string targetPlayerUid, Guild guild, int targetRole)
     {
-        Guild? guild = GetGuild(guildName);
-        if (guild == null) return GuildStatus.GuildNotFound;
+        // Get acting player role.
+        RoleInfo? actingRole = guild.GetRole(actingUid);
+        RoleInfo? targetPlayerRole = guild.GetRole(targetPlayerUid);
+        RoleInfo? role = guild.GetRole(targetRole);
 
-        RoleInfo? role = GetPlayersRole(guildName, player);
-        if (role == null) return GuildStatus.Error;
+        if (actingRole == null || targetPlayerRole == null || role == null) return false;
 
-        if (!role.HasPermissions(GuildPerms.ManageRoles)) return GuildStatus.NoPermission;
+        if (!actingRole.HasPermissions(GuildPerms.Promote)) return false;
+        if (targetPlayerRole.authority >= actingRole.authority || role.authority >= actingRole.authority) return false;
 
-        guild.AddRole();
+        guild.ChangePlayersRole(targetPlayerUid, role.id);
 
-        return GuildStatus.Success;
+        return true;
     }
 
-    public GuildStatus RemoveRole(IServerPlayer player, string guildName, int roleId)
-    {
-        Guild? guild = GetGuild(guildName);
-        if (guild == null) return GuildStatus.GuildNotFound;
+    #endregion
 
-        RoleInfo? role = GetPlayersRole(guildName, player);
-        if (role == null) return GuildStatus.Error;
-
-        if (!role.HasPermissions(GuildPerms.ManageRoles)) return GuildStatus.NoPermission;
-
-        RoleInfo? targetRole = guild.GetRole(roleId);
-        if (targetRole == null || targetRole.authority >= role.authority) return GuildStatus.NoPermission;
-
-        if (!guild.RemoveRole(roleId)) return GuildStatus.Error;
-
-        return GuildStatus.Success;
-    }
-
-    public bool IsPlayerInGuild(string playerUid, string guildName)
-    {
-        return GetPlayersGuilds(playerUid).Contains(guildName);
-    }
-
-    public Guild? GetGuild(string guildName)
-    {
-        if (!guilds.TryGetValue(guildName, out Guild? guild)) return null;
-        return guild;
-    }
-
-    public RoleInfo? GetPlayersRole(string guildName, string playerUid)
-    {
-        Guild? guild = GetGuild(guildName);
-        if (guild == null) return null;
-        return guild.GetRole(playerUid);
-    }
-
-    public RoleInfo? GetPlayersRole(string guildName, IPlayer player)
-    {
-        Guild? guild = GetGuild(guildName);
-        if (guild == null) return null;
-        return guild.GetRole(player.PlayerUID);
-    }
+    #region Metrics
 
     public PlayerMetrics GetMetrics(IPlayer player)
     {
-        if (!metrics.TryGetValue(player.PlayerUID, out PlayerMetrics? playerMetrics))
+        if (!playerMetrics.TryGetValue(player.PlayerUID, out PlayerMetrics? metrics))
         {
             if (player is IClientPlayer clientPlayer)
             {
-                playerMetrics = new PlayerMetrics(clientPlayer);
+                metrics = new PlayerMetrics(clientPlayer);
             }
             else
             {
-                playerMetrics = new PlayerMetrics((IServerPlayer)player);
+                metrics = new PlayerMetrics((IServerPlayer)player);
             }
 
-            metrics[player.PlayerUID] = playerMetrics;
+            playerMetrics[player.PlayerUID] = metrics;
         }
 
-        return playerMetrics;
+        return metrics;
     }
 
+    /// <summary>
+    /// Get metrics on the client.
+    /// </summary>
     public PlayerMetrics? GetMetrics(string playerUid)
     {
-        if (!metrics.TryGetValue(playerUid, out PlayerMetrics? playerMetrics)) return null;
-        return playerMetrics;
+        if (!playerMetrics.TryGetValue(playerUid, out PlayerMetrics? metrics)) return null;
+        return metrics;
     }
 
     public void UpdateClientMetrics(PlayerMetrics metric)
     {
         if (metric.uid == null || metric.lastName == null) return;
 
-        metrics[metric.uid] = metric;
+        playerMetrics[metric.uid] = metric;
     }
 
-    public void UpdateClientMetrics(List<PlayerMetrics> metrics)
-    {
-        metrics.Clear();
+    #endregion
 
-        foreach (PlayerMetrics metric in metrics)
-        {
-            UpdateClientMetrics(metric);
-        }
-    }
+    #region Packets
 
-    /// <summary>
-    /// Add a player to a guild.
-    /// </summary>
-    public GuildStatus AddPlayerToGuild(string playerUid, string guildName)
-    {
-        Guild? guild = GetGuild(guildName);
-        if (guild == null)
-        {
-            return GuildStatus.GuildNotFound;
-        }
-
-        HashSet<string> guilds = GetPlayersGuilds(playerUid);
-        guilds.Add(guildName);
-        guild.AddMember(playerUid);
-
-        return GuildStatus.Success;
-    }
-
-    /// <summary>
-    /// Remove a player from a guild.
-    /// </summary>
-    public GuildStatus RemovePlayerFromGuild(string playerUid, string guildName)
-    {
-        Guild? guild = GetGuild(guildName);
-        if (guild == null)
-        {
-            return GuildStatus.GuildNotFound;
-        }
-
-        RoleInfo? role = guild.GetRole(playerUid);
-        if (role?.id == 1) return GuildStatus.Error;
-
-        HashSet<string> guilds = GetPlayersGuilds(playerUid);
-
-        if (!guilds.Contains(guildName))
-        {
-            return GuildStatus.NotInGuild;
-        }
-
-        guilds.Remove(guildName);
-        guild.RemoveMember(playerUid);
-
-        return GuildStatus.Success;
-    }
-
-    /// <summary>
-    /// Found a guild with a player.
-    /// </summary>
-    public GuildStatus CreateGuild(string guildName, IPlayer foundingPlayer)
-    {
-        if (guilds.ContainsKey(guildName))
-        {
-            return GuildStatus.GuildExists;
-        }
-
-        Guild guild = new(foundingPlayer, guildName);
-        guilds[guildName] = guild;
-
-        GetPlayersGuilds(foundingPlayer.PlayerUID).Add(guild.Name);
-
-        return GuildStatus.Success;
-    }
-
-    /// <summary>
-    /// Disbands a guild, returns all uids in that guild if successful.
-    /// </summary>
-    public GuildStatus DisbandGuild(string guildName)
-    {
-        Guild? guild = GetGuild(guildName);
-        if (guild == null) return GuildStatus.GuildNotFound;
-
-        foreach (MembershipInfo info in guild.MemberInfo)
-        {
-            GetPlayersGuilds(info.playerUid).Remove(guild.Name);
-        }
-
-        guilds.Remove(guildName);
-
-        return GuildStatus.Success;
-    }
-
-    /// <summary>
-    /// Promote a player on the server.
-    /// </summary>
-    public GuildStatus ChangeRole(string actingUid, string targetPlayerUid, string guildName, int targetRole)
-    {
-        Guild? guild = GetGuild(guildName);
-        if (guild == null) return GuildStatus.GuildNotFound;
-
-        // Get acting player role.
-        RoleInfo? actingRole = GetPlayersRole(actingUid, guildName);
-        RoleInfo? targetPlayerRole = GetPlayersRole(targetPlayerUid, guildName);
-        RoleInfo? role = guild.GetRole(targetRole);
-
-        if (actingRole == null || targetPlayerRole == null || role == null) return GuildStatus.Error;
-
-        if (!actingRole.HasPermissions(GuildPerms.Promote)) return GuildStatus.NoPermission;
-        if (targetPlayerRole.authority >= actingRole.authority || role.authority >= actingRole.authority) return GuildStatus.NoPermission;
-
-        guild.ChangeRole(targetPlayerUid, role.id);
-
-        return GuildStatus.Success;
-    }
-
-    /// <summary>
-    /// Handle kick packet.
-    /// </summary>
-    public GuildStatus KickPlayer(string actingUid, string targetPlayerUid, string guildName)
-    {
-        Guild? guild = GetGuild(guildName);
-        if (guild == null) return GuildStatus.GuildNotFound;
-
-        RoleInfo? actingRole = GetPlayersRole(actingUid, guildName);
-        RoleInfo? targetPlayerRole = GetPlayersRole(targetPlayerUid, guildName);
-
-        if (actingRole == null || targetPlayerRole == null) return GuildStatus.Error;
-        if (targetPlayerRole.authority >= actingRole.authority || !actingRole.HasPermissions(GuildPerms.Kick)) return GuildStatus.NoPermission;
-
-        // Remove player from guild.
-        return RemovePlayerFromGuild(targetPlayerUid, guildName);
-    }
-
-    // Packets ----------
     public void GuildReceived(Guild data)
     {
-        guilds[data.Name] = data;
+        guilds[data.Id] = data;
         RefreshClient();
     }
 
-    public void SyncGuild(GuildManager manager, string guildName)
+    public static void SyncGuild(GuildManager manager, Guild guild)
     {
-        Guild? guild = GetGuild(guildName);
-        if (guild == null) return;
         manager.BroadcastPacket(guild);
     }
 
@@ -599,7 +535,7 @@ public class GuildData
     public void MembersReceived(FullMembersPacket packet)
     {
         if (packet.members == null) return;
-        members = packet.members;
+        playerToGuilds = packet.members;
         RefreshClient();
     }
 
@@ -607,7 +543,7 @@ public class GuildData
     {
         FullMembersPacket packet = new()
         {
-            members = members
+            members = playerToGuilds
         };
 
         manager.BroadcastPacket(packet);
@@ -616,7 +552,7 @@ public class GuildData
     public void InvitesReceived(FullInvitesPacket packet)
     {
         if (packet.pendingInvites == null) return;
-        pendingInvites = packet.pendingInvites;
+        playerToInvites = packet.pendingInvites;
         RefreshClient();
     }
 
@@ -624,7 +560,7 @@ public class GuildData
     {
         FullInvitesPacket packet = new()
         {
-            pendingInvites = pendingInvites
+            pendingInvites = playerToInvites
         };
 
         manager.BroadcastPacket(packet);
@@ -633,7 +569,7 @@ public class GuildData
     public void MetricsReceived(FullMetricsPacket packet)
     {
         if (packet.metrics == null) return;
-        metrics = packet.metrics;
+        playerMetrics = packet.metrics;
         RefreshClient();
     }
 
@@ -641,7 +577,7 @@ public class GuildData
     {
         FullMetricsPacket packet = new()
         {
-            metrics = metrics
+            metrics = playerMetrics
         };
 
         manager.BroadcastPacket(packet);
@@ -664,6 +600,8 @@ public class GuildData
             manager.guildGui?.SetWidgets();
         }
     }
+
+    #endregion
 }
 
 /// <summary>
@@ -705,6 +643,8 @@ public class PlayerMetrics
     public bool isOnline;
     [JsonProperty]
     public string uid = "NaN";
+    [JsonProperty]
+    public int reppedGuildId = -1;
 
     public PlayerMetrics(IServerPlayer player)
     {
@@ -777,14 +717,40 @@ public class PlayerMetrics
 [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
 public class Guild
 {
+    [ModuleInitializer]
+    internal static void Init()
+    {
+        RuntimeTypeModel.Default.Add(typeof(Vector3), false)
+            .Add("X")
+            .Add("Y")
+            .Add("Z");
+    }
+
     [JsonProperty]
     public string Name { get; private set; }
-    public int MemberCount => members.Count;
+    public void ChangeName(string name)
+    {
+        Name = name;
+    }
 
-    /// <summary>
-    /// Enumerate over every member.
-    /// </summary>
-    public IEnumerable<MembershipInfo> MemberInfo => members.Values;
+    [JsonProperty]
+    public int Id { get; private set; }
+
+    [JsonProperty]
+    private HashSet<string> invites = new();
+
+    [JsonProperty]
+    public RoleInfo[] roles;
+
+    [JsonProperty]
+    private Vector3 color;
+
+    public Vector3 Color => color;
+
+    public void SetColor(Vector3 color)
+    {
+        this.color = color;
+    }
 
     /// <summary>
     /// Player uid to info about their membership.
@@ -792,12 +758,12 @@ public class Guild
     [JsonProperty]
     private readonly Dictionary<string, MembershipInfo> members = new();
 
-    // Players currently invited to this guild.
-    [JsonProperty]
-    private HashSet<string> invites = new();
+    public int MemberCount => members.Count;
 
-    [JsonProperty]
-    public RoleInfo[] roles;
+    /// <summary>
+    /// Enumerate over every member.
+    /// </summary>
+    public IEnumerable<MembershipInfo> MemberInfo => members.Values;
 
     public RoleInfo? GetRole(string playerUid)
     {
@@ -820,9 +786,10 @@ public class Guild
         return members.ContainsKey(playerUid);
     }
 
-    public Guild(IPlayer foundingPlayer, string name)
+    public Guild(IPlayer foundingPlayer, string name, int id)
     {
         Name = name;
+        Id = id;
 
         // Initialize roles.
         // Roles 0 and 1 can't be deleted, they are the designated member and founder role. They can be altered.
@@ -835,13 +802,8 @@ public class Guild
         membershipInfo.roleId = 1;
     }
 
-    public void ChangeName(string name)
-    {
-        Name = name;
-    }
-
     /// <summary>
-    /// Add a new randomly named role.
+    /// Add a new empty role.
     /// </summary>
     public void AddRole()
     {
@@ -904,6 +866,12 @@ public class Guild
         return invites.Contains(playerUid);
     }
 
+    public HashSet<string> GetInvites()
+    {
+        invites ??= new HashSet<string>();
+        return invites;
+    }
+
     public void AddMember(string playerUid)
     {
         members[playerUid] = new MembershipInfo(playerUid);
@@ -914,7 +882,7 @@ public class Guild
         members.Remove(playerUid);
     }
 
-    public void ChangeRole(string playerUid, int roleId)
+    public void ChangePlayersRole(string playerUid, int roleId)
     {
         if (!members.TryGetValue(playerUid, out MembershipInfo? memberInfo)) return;
         memberInfo.roleId = roleId;
