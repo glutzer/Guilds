@@ -10,15 +10,19 @@
   <ItemGroup>
     <Reference Include="MareLib">
       <HintPath>..\..\MareLib\MareLib\bin\Release\Mods\mod\MareLib.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="OpenTK.Graphics">
       <HintPath>$(VINTAGE_STORY)/Lib/OpenTK.Graphics.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="OpenTK.Mathematics">
       <HintPath>$(VINTAGE_STORY)/Lib/OpenTK.Mathematics.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="SkiaSharp">
       <HintPath>$(VINTAGE_STORY)/Lib/SkiaSharp.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="VintagestoryAPI">
       <HintPath>$(VINTAGE_STORY)/VintagestoryAPI.dll</HintPath>
@@ -69,6 +73,10 @@
   <Content Include="modinfo.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
   </Content>
+</ItemGroup>
+
+<ItemGroup>
+  <Folder Include="src\systems\" />
 </ItemGroup>
 
 </Project>
