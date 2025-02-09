@@ -1,9 +1,7 @@
 ﻿using MareLib;
 using OpenTK.Mathematics;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Claims;
 using System.Text;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
@@ -79,7 +77,7 @@ public class GuildClaimMapLayer : MapLayer
         {
             // Prevent adding off-screen tiles but not entirely sure how it works.
             Vector2 screenPos = TranslateChunkPosToViewPos(claim.position, lastMap);
-            if (screenPos.X < -64 || screenPos.Y < -64 || screenPos.X > MainAPI.RenderWidth + 64 * lastMap.ZoomLevel || screenPos.Y > MainAPI.RenderWidth + 64 * lastMap.ZoomLevel) return;
+            if (screenPos.X < -64 || screenPos.Y < -64 || screenPos.X > MainAPI.RenderWidth + (64 * lastMap.ZoomLevel) || screenPos.Y > MainAPI.RenderWidth + (64 * lastMap.ZoomLevel)) return;
         }
 
         Guild? guild = guildManager.guildData.GetGuild(claim.guildId);
@@ -233,7 +231,7 @@ public class GuildClaimMapLayer : MapLayer
             Guild? guild = guildManager.guildData.GetGuild(claim.guildId);
             if (guild == null) return;
 
-            hoverText.AppendLine($"Claimed by {guild.Name}");
+            hoverText.AppendLine($"Claimed by {guild.name}");
         }
     }
 

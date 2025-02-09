@@ -1,5 +1,4 @@
-﻿using MareLib;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using OpenTK.Mathematics;
 using ProtoBuf;
 using ProtoBuf.Meta;
@@ -84,7 +83,7 @@ public class RoleInfo
         return this;
     }
 
-    public void ChangeRole(RoleChangePacket packet)
+    public void ChangeRole(RoleUpdatePacket packet)
     {
         name = packet.newName!; // Checked null beforehand.
         authority = packet.newAuthority;
@@ -102,28 +101,28 @@ public class RoleInfo
 public class GuildData
 {
     [JsonProperty]
-    private Dictionary<int, Guild> guilds = new();
+    public Dictionary<int, Guild> guilds = new();
 
     [JsonProperty]
-    private int nextGuildId = 0;
+    public int nextGuildId = 0;
 
     /// <summary>
     /// Map of player uid to every guild id they are in.
     /// </summary>
     [JsonProperty]
-    private Dictionary<string, HashSet<int>> playerToGuilds = new();
+    public Dictionary<string, HashSet<int>> playerToGuilds = new();
 
     /// <summary>
     /// Player uid to guilds they are invited to.
     /// </summary>
     [JsonProperty]
-    private Dictionary<string, HashSet<int>> playerToInvites = new();
+    public Dictionary<string, HashSet<int>> playerToInvites = new();
 
     /// <summary>
     /// Metrics for every player that has logged in, by uid.
     /// </summary>
     [JsonProperty]
-    private Dictionary<string, PlayerMetrics> playerMetrics = new();
+    public Dictionary<string, PlayerMetrics> playerMetrics = new();
     public IEnumerable<PlayerMetrics> AllMetrics => playerMetrics.Values;
 
     public bool IsValidUid(string uid)
@@ -224,7 +223,7 @@ public class GuildData
 
         HashSet<int> invites = GetPlayersInvites(invitedUid);
 
-        invites.Add(guild.Id);
+        invites.Add(guild.id);
         guild.AddInvite(invitedUid);
 
         return true;
@@ -242,7 +241,7 @@ public class GuildData
 
         HashSet<int> invites = GetPlayersInvites(invitedUid);
 
-        invites.Remove(guild.Id);
+        invites.Remove(guild.id);
         guild.RemoveInvite(invitedUid);
 
         return true;
@@ -252,7 +251,7 @@ public class GuildData
     {
         HashSet<int> invites = GetPlayersInvites(invitedUid);
 
-        if (!invites.Remove(guild.Id))
+        if (!invites.Remove(guild.id))
         {
             guild.RemoveInvite(invitedUid);
             return false;
@@ -301,7 +300,7 @@ public class GuildData
     public bool AddPlayerToGuild(string playerUid, Guild guild)
     {
         HashSet<int> guilds = GetPlayersGuilds(playerUid);
-        guilds.Add(guild.Id);
+        guilds.Add(guild.id);
         guild.AddMember(playerUid);
 
         return true;
@@ -314,19 +313,18 @@ public class GuildData
 
         HashSet<int> guilds = GetPlayersGuilds(playerUid);
 
-        if (!guilds.Contains(guild.Id))
+        if (!guilds.Contains(guild.id))
         {
             return false;
         }
 
-        guilds.Remove(guild.Id);
+        guilds.Remove(guild.id);
         guild.RemoveMember(playerUid);
 
         PlayerMetrics? metrics = GetMetrics(playerUid);
-        if (metrics != null && metrics.reppedGuildId == guild.Id)
+        if (metrics != null && metrics.reppedGuildId == guild.id)
         {
             metrics.reppedGuildId = -1;
-            SyncMetrics(MainAPI.GetGameSystem<GuildManager>(EnumAppSide.Server)); // Until more specific updates are in.
         }
 
         return true;
@@ -334,7 +332,7 @@ public class GuildData
 
     public bool IsGuildNameAllowed(string guildName)
     {
-        if (guilds.Values.Any(g => g.Name == guildName)) return false;
+        if (guilds.Values.Any(g => g.name == guildName)) return false;
         if (guildName.Length is < 3 or > 32) return false;
 
         return true;
@@ -349,7 +347,7 @@ public class GuildData
 
         Guild guild = new(foundingPlayer, guildName, nextGuildId);
         nextGuildId++;
-        guilds[guild.Id] = guild;
+        guilds[guild.id] = guild;
 
         Random rand = new();
         Vector3 color = new(rand.NextSingle(), rand.NextSingle(), rand.NextSingle());
@@ -358,7 +356,7 @@ public class GuildData
         color.Z = MathF.Round(color.Z, 2);
         guild.SetColor(color);
 
-        GetPlayersGuilds(foundingPlayer.PlayerUID).Add(guild.Id);
+        GetPlayersGuilds(foundingPlayer.PlayerUID).Add(guild.id);
 
         return true;
     }
@@ -367,15 +365,15 @@ public class GuildData
     {
         foreach (MembershipInfo info in guild.MemberInfo)
         {
-            GetPlayersGuilds(info.playerUid).Remove(guild.Id);
+            GetPlayersGuilds(info.playerUid).Remove(guild.id);
         }
 
         foreach (string invite in guild.GetInvites())
         {
-            GetPlayersInvites(invite).Remove(guild.Id);
+            GetPlayersInvites(invite).Remove(guild.id);
         }
 
-        guilds.Remove(guild.Id);
+        guilds.Remove(guild.id);
 
         return true;
     }
@@ -396,7 +394,7 @@ public class GuildData
 
     #region Roles
 
-    public static bool AddRole(IServerPlayer player, Guild guild)
+    public static bool AddRole(IPlayer player, Guild guild)
     {
         RoleInfo? role = guild.GetRole(player.PlayerUID);
         if (role == null) return false;
@@ -408,7 +406,7 @@ public class GuildData
         return true;
     }
 
-    public static bool RemoveRole(IServerPlayer player, Guild guild, int roleId)
+    public static bool RemoveRole(IPlayer player, Guild guild, int roleId)
     {
         RoleInfo? role = guild.GetRole(player.PlayerUID);
         if (role == null) return false;
@@ -421,7 +419,7 @@ public class GuildData
         return guild.RemoveRole(roleId);
     }
 
-    public bool UpdateRole(IServerPlayer player, RoleChangePacket packet)
+    public bool UpdateRole(IPlayer player, RoleUpdatePacket packet)
     {
         if (packet.newName == null) return false;
 
@@ -491,114 +489,6 @@ public class GuildData
     {
         if (!playerMetrics.TryGetValue(playerUid, out PlayerMetrics? metrics)) return null;
         return metrics;
-    }
-
-    public void UpdateClientMetrics(PlayerMetrics metric)
-    {
-        if (metric.uid == null || metric.lastName == null) return;
-
-        playerMetrics[metric.uid] = metric;
-    }
-
-    #endregion
-
-    #region Packets
-
-    public void GuildReceived(Guild data)
-    {
-        guilds[data.Id] = data;
-        RefreshClient();
-    }
-
-    public static void SyncGuild(GuildManager manager, Guild guild)
-    {
-        manager.BroadcastPacket(guild);
-    }
-
-    public void GuildsReceived(FullGuildPacket packet)
-    {
-        if (packet.guilds == null) return;
-        guilds = packet.guilds;
-        ResetClient(); // Guilds added/removed.
-    }
-
-    public void SyncGuilds(GuildManager manager)
-    {
-        FullGuildPacket packet = new()
-        {
-            guilds = guilds
-        };
-
-        manager.BroadcastPacket(packet);
-    }
-
-    public void MembersReceived(FullMembersPacket packet)
-    {
-        if (packet.members == null) return;
-        playerToGuilds = packet.members;
-        RefreshClient();
-    }
-
-    public void SyncMembers(GuildManager manager)
-    {
-        FullMembersPacket packet = new()
-        {
-            members = playerToGuilds
-        };
-
-        manager.BroadcastPacket(packet);
-    }
-
-    public void InvitesReceived(FullInvitesPacket packet)
-    {
-        if (packet.pendingInvites == null) return;
-        playerToInvites = packet.pendingInvites;
-        RefreshClient();
-    }
-
-    public void SyncInvites(GuildManager manager)
-    {
-        FullInvitesPacket packet = new()
-        {
-            pendingInvites = playerToInvites
-        };
-
-        manager.BroadcastPacket(packet);
-    }
-
-    public void MetricsReceived(FullMetricsPacket packet)
-    {
-        if (packet.metrics == null) return;
-        playerMetrics = packet.metrics;
-        RefreshClient();
-    }
-
-    public void SyncMetrics(GuildManager manager)
-    {
-        FullMetricsPacket packet = new()
-        {
-            metrics = playerMetrics
-        };
-
-        manager.BroadcastPacket(packet);
-    }
-
-    public static void RefreshClient()
-    {
-        GuildManager manager = MainAPI.GetGameSystem<GuildManager>(EnumAppSide.Client);
-        if (manager.guildGui?.IsOpened() == true)
-        {
-            manager.guildGui?.RefreshPage();
-        }
-    }
-
-    public static void ResetClient()
-    {
-        GuildManager manager = MainAPI.GetGameSystem<GuildManager>(EnumAppSide.Client);
-        if (manager.guildGui?.IsOpened() == true)
-        {
-            manager.guildGui?.SetWidgets();
-        }
     }
 
     #endregion
@@ -727,14 +617,14 @@ public class Guild
     }
 
     [JsonProperty]
-    public string Name { get; private set; }
+    public string name = "NaN";
     public void ChangeName(string name)
     {
-        Name = name;
+        this.name = name;
     }
 
     [JsonProperty]
-    public int Id { get; private set; }
+    public int id;
 
     [JsonProperty]
     private HashSet<string> invites = new();
@@ -788,8 +678,8 @@ public class Guild
 
     public Guild(IPlayer foundingPlayer, string name, int id)
     {
-        Name = name;
-        Id = id;
+        this.name = name;
+        this.id = id;
 
         // Initialize roles.
         // Roles 0 and 1 can't be deleted, they are the designated member and founder role. They can be altered.

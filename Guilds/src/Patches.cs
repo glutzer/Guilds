@@ -28,19 +28,19 @@ public class Patches
                 RoleInfo? roleInfo = guild.GetRole(forPlayer.PlayerUID);
                 if (roleInfo == null)
                 {
-                    __result = $"guild {guild.Name}";
+                    __result = $"guild {guild.name}";
                     return false;
                 }
 
                 if (accessFlag == EnumBlockAccessFlags.Use && !roleInfo.HasPermissions(GuildPerms.UseBlocks))
                 {
-                    __result = $"{guild.Name} has not granted use permissions";
+                    __result = $"{guild.name} has not granted use permissions";
                     return false;
                 }
 
                 if (accessFlag == EnumBlockAccessFlags.BuildOrBreak && !roleInfo.HasPermissions(GuildPerms.BreakBlocks))
                 {
-                    __result = $"{guild.Name} has not granted build permissions";
+                    __result = $"{guild.name} has not granted build permissions";
                     return false;
                 }
             }

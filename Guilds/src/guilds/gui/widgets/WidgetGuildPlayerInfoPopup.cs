@@ -30,7 +30,7 @@ public class WidgetGuildPlayerInfoPopup : Widget
                     new WidgetGuildButton(this, () =>
                     {
                         RemoveSelf();
-                    }, $"Kick From {guild.Name}", new Vector4(0.3f, 0, 0, 1), Vector4.One).Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
+                    }, $"Kick From {guild.name}", new Vector4(0.3f, 0, 0, 1), Vector4.One).Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
                 }
 
                 if (ownRole.HasPermissions(GuildPerms.Promote) && ownRole.authority > targetRole.authority)
@@ -51,13 +51,13 @@ public class WidgetGuildPlayerInfoPopup : Widget
                         GuildRequestPacket packet = new()
                         {
                             targetPlayer = playerUid,
-                            guildId = guild.Id,
-                            type = EnumGuildPacket.CancelInvite
+                            guildId = guild.id,
+                            type = EnumGuildRequestPacket.CancelInvite
                         };
 
                         manager.SendPacket(packet);
                         RemoveSelf();
-                    }, $"Cancel {guild.Name} Invite", new Vector4(0.3f, 0, 0, 1), Vector4.One).Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
+                    }, $"Cancel {guild.name} Invite", new Vector4(0.3f, 0, 0, 1), Vector4.One).Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
                 }
                 else
                 {
@@ -66,13 +66,13 @@ public class WidgetGuildPlayerInfoPopup : Widget
                         GuildRequestPacket packet = new()
                         {
                             targetPlayer = playerUid,
-                            guildId = guild.Id,
-                            type = EnumGuildPacket.Invite
+                            guildId = guild.id,
+                            type = EnumGuildRequestPacket.Invite
                         };
 
                         manager.SendPacket(packet);
                         RemoveSelf();
-                    }, $"Invite To {guild.Name}", new Vector4(0.3f, 0, 0, 1), Vector4.One).Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
+                    }, $"Invite To {guild.name}", new Vector4(0.3f, 0, 0, 1), Vector4.One).Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
                 }
             }
         }

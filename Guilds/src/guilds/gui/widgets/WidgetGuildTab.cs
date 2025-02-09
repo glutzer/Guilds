@@ -39,6 +39,7 @@ public class WidgetGuildTab : WidgetBaseToggleableButton
     public void SetDown()
     {
         state = EnumButtonState.Active;
+        accum = 1;
     }
 
     public override void OnRender(float dt, MareShader shader)

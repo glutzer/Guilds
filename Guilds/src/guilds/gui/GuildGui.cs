@@ -1,5 +1,4 @@
 ﻿using MareLib;
-using MareLib.src.gui.widgets;
 using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
@@ -60,6 +59,44 @@ public class GuildGui : Gui
         manager = MainAPI.GetGameSystem<GuildManager>(EnumAppSide.Client);
         ownUid = MainAPI.Capi.World.Player.PlayerUID;
 
+        GuildManager.OnClientUpdate += (type, obj) =>
+        {
+            if (!IsOpened()) return;
+
+            if (type == EnumClientGuildUpdate.GuildAdded && obj is Guild eventGuild)
+            {
+                if (eventGuild.HasMember(ownUid))
+                {
+                    SetWidgets(); // Reset gui.
+                }
+            }
+
+            if (type == EnumClientGuildUpdate.GuildRemoved && obj is bool inGuild)
+            {
+                if (inGuild)
+                {
+                    SetWidgets(); // Reset gui.
+                    selectedGuildId = -1;
+                }
+            }
+
+            if (type == EnumClientGuildUpdate.GuildInfoChanged && obj is Guild guildInfoChanged)
+            {
+                if (guildInfoChanged.HasMember(ownUid))
+                {
+                    SetWidgets(); // Reset gui.
+                }
+            }
+
+            if (type == EnumClientGuildUpdate.MetricsChanged)
+            {
+                if (currentPage is 2 or 4)
+                {
+                    RefreshPage(); // Refresh pages with player info.
+                }
+            }
+        };
+
         pages.Add(new PageEntry("Create Guild", (widget, gui) =>
         {
             Widget bg = new WidgetSliceBackground(widget, GuiThemes.Title, new Vector4(0.1f, 0.1f, 0.1f, 1))
@@ -74,7 +111,7 @@ public class GuildGui : Gui
             {
                 GuildRequestPacket packet = new()
                 {
-                    type = EnumGuildPacket.Create,
+                    type = EnumGuildRequestPacket.Create,
                     data = SerializerUtil.Serialize(textBox.text.Text)
                 };
 
@@ -96,7 +133,7 @@ public class GuildGui : Gui
             Guild? guild = manager.guildData.GetGuild(selectedGuildId);
             if (guild == null) return;
 
-            new WidgetTextLine(contentContainer, FontRegistry.GetFont("friz"), guild.Name, Vector4.One)
+            new WidgetTextLine(contentContainer, FontRegistry.GetFont("friz"), guild.name, Vector4.One)
                     .Alignment(Align.CenterTop)
                     .PercentWidth(1)
                     .FixedHeight(12);
@@ -108,7 +145,7 @@ public class GuildGui : Gui
                 {
                     GuildRequestPacket packet = new()
                     {
-                        type = EnumGuildPacket.Disband,
+                        type = EnumGuildRequestPacket.Disband,
                         guildId = selectedGuildId
                     };
                     MainAPI.GetGameSystem<GuildManager>(EnumAppSide.Client).SendPacket(packet);
@@ -120,7 +157,7 @@ public class GuildGui : Gui
                 {
                     GuildRequestPacket packet = new()
                     {
-                        type = EnumGuildPacket.Leave,
+                        type = EnumGuildRequestPacket.Leave,
                         guildId = selectedGuildId
                     };
                     MainAPI.GetGameSystem<GuildManager>(EnumAppSide.Client).SendPacket(packet);
@@ -131,7 +168,7 @@ public class GuildGui : Gui
             {
                 GuildRequestPacket packet = new()
                 {
-                    type = EnumGuildPacket.RepGuild,
+                    type = EnumGuildRequestPacket.RepGuild,
                     guildId = on ? selectedGuildId : -1
                 };
 
@@ -139,12 +176,16 @@ public class GuildGui : Gui
             }, "Rep Guild", GuiThemes.ButtonColor, false);
             repButton.Alignment(Align.CenterTop).Fixed(0, 12, 32, 12);
 
+            ClaimManager claimManager = MainAPI.GetGameSystem<ClaimManager>(EnumAppSide.Client);
+            new WidgetTextLine(repButton, FontRegistry.GetFont("friz"), $"Claims: {claimManager.claimData.GetClaimCount(guild)}/{guild.MemberCount * 10}", Vector4.One, true)
+            .Alignment(Align.LeftMiddle, AlignFlags.OutsideH).FixedSize(32, 12);
+
             if (roleInfo?.HasPermissions(GuildPerms.ManageGuildInfo) == true)
             {
                 GuildInfoPacket packet = new()
                 {
-                    guildId = guild.Id,
-                    name = guild.Name,
+                    guildId = guild.id,
+                    name = guild.name,
                     color = guild.Color
                 };
 
@@ -153,7 +194,7 @@ public class GuildGui : Gui
                     packet.color = color;
                 }, guild.Color).Alignment(Align.CenterTop).Fixed(0, 32, 64, 64);
 
-                new WidgetGuildLabeledInput(widget, guild.Name, "Guild Name", s =>
+                new WidgetGuildLabeledInput(widget, guild.name, "Guild Name", s =>
                 {
                     packet.name = s;
                 }, s =>
@@ -283,18 +324,18 @@ public class GuildGui : Gui
                 {
                     GuildRequestPacket packet = new()
                     {
-                        type = EnumGuildPacket.AcceptInvite,
-                        guildId = guild.Id
+                        type = EnumGuildRequestPacket.AcceptInvite,
+                        guildId = guild.id
                     };
                     manager.SendPacket(packet);
-                }, $"Join {guild.Name}", new Vector4(0.3f, 0.5f, 0.3f, 1), Vector4.One).Alignment(Align.CenterTop).Fixed(-32, index * 12, 64, 12);
+                }, $"Join {guild.name}", new Vector4(0.3f, 0.5f, 0.3f, 1), Vector4.One).Alignment(Align.CenterTop).Fixed(-32, index * 12, 64, 12);
 
                 new WidgetGuildButton(widget, () =>
                 {
                     GuildRequestPacket packet = new()
                     {
-                        type = EnumGuildPacket.AcceptInvite,
-                        guildId = guild.Id
+                        type = EnumGuildRequestPacket.AcceptInvite,
+                        guildId = guild.id
                     };
                     manager.SendPacket(packet);
                 }, $"Deny", new Vector4(0.5f, 0.3f, 0.3f, 1), Vector4.One).Alignment(Align.CenterTop).Fixed(32, index * 12, 64, 12);
@@ -331,8 +372,6 @@ public class GuildGui : Gui
     public override void PopulateWidgets()
     {
         // Reset gui when re-populating, because a guild has been added or removed if this happened.
-        currentPage = 0;
-        selectedGuildId = -1;
 
         WidgetSliceBackground bg = new(null, GuiThemes.Background, new Vector4(0.2f, 0.2f, 0.2f, 1));
         AddWidget(bg.Fixed(0, 0, 200, 200).Alignment(Align.Center));
@@ -349,6 +388,8 @@ public class GuildGui : Gui
             }, true, new Vector4(0.5f, 0, 0, 1), entry.name).Fixed(0, index * 12, 50, 12).Alignment(Align.LeftTop, AlignFlags.OutsideH);
             index++;
             tabs.Add(guildTab);
+
+            if (i == currentPage) guildTab.SetDown();
         }
         tabs[currentPage].SetDown();
 
@@ -388,9 +429,11 @@ public class GuildGui : Gui
                 }
 
                 RefreshPage();
-            }, false, new Vector4(guild.Color, 1), guild.Name, true).Fixed(8, index * 12, 50, 12).Alignment(Align.RightTop, AlignFlags.OutsideH);
+            }, false, new Vector4(guild.Color, 1), guild.name, true).Fixed(8, index * 12, 50, 12).Alignment(Align.RightTop, AlignFlags.OutsideH);
             index++;
             guildTabs.Add(newTab);
+
+            if (guild.id == selectedGuildId) newTab.SetDown();
         }
     }
 

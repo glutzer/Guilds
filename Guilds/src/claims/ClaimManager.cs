@@ -104,13 +104,29 @@ public class ClaimData
     [JsonProperty]
     public Dictionary<GridPos2d, GuildClaim> guildClaims = new();
 
+    [JsonProperty]
+    public Dictionary<int, int> guildClaimCount = new();
+
     public bool TryGetClaim(GridPos2d position, [NotNullWhen(true)] out GuildClaim claim)
     {
         return guildClaims.TryGetValue(position, out claim);
     }
 
+    public int GetClaimCount(Guild guild)
+    {
+        return guildClaimCount.TryGetValue(guild.id, out int count) ? count : 0;
+    }
+
     public void RemoveClaim(GridPos2d position)
     {
+        if (!guildClaims.TryGetValue(position, out GuildClaim claim)) return;
+
+        if (guildClaimCount.TryGetValue(claim.guildId, out int count))
+        {
+            if (count == 1) guildClaimCount.Remove(claim.guildId);
+            else guildClaimCount[claim.guildId] = count - 1;
+        }
+
         guildClaims.Remove(position);
 
         foreach (GridPos2d adjacent in position.Adjacents())
@@ -188,6 +204,15 @@ public class ClaimData
             }
         }
 
+        if (guildClaimCount.TryGetValue(claim.guildId, out int count))
+        {
+            guildClaimCount[claim.guildId] = count + 1;
+        }
+        else
+        {
+            guildClaimCount[claim.guildId] = 1;
+        }
+
         guildClaims[position] = claim;
     }
 }
@@ -219,20 +244,6 @@ public class ClaimManager : NetworkedGameSystem
             Harmony = new Harmony("guilds");
             Harmony.PatchAll();
         }
-    }
-
-    public void AddClaimServer(GridPos2d position, int guildId)
-    {
-        claimData.AddClaim(position, guildId);
-        BroadcastPacket(new ClaimPacket() { position = position, guildId = guildId });
-        onClaimAdded?.Invoke(claimData.guildClaims[position]);
-    }
-
-    public void RemoveClaimServer(GridPos2d position)
-    {
-        claimData.RemoveClaim(position);
-        BroadcastPacket(new ClaimPacket() { position = position, removed = true });
-        onClaimRemoved?.Invoke(position);
     }
 
     public override void OnStart()
@@ -269,20 +280,24 @@ public class ClaimManager : NetworkedGameSystem
         RoleInfo? role = reppedGuild.GetRole(player.PlayerUID);
         if (role == null || !role.HasPermissions(GuildPerms.ManageClaims)) return;
 
-        packet.guildId = reppedGuild.Id;
+        packet.guildId = reppedGuild.id;
 
         if (packet.removed)
         {
             if (claimData.TryGetClaim(packet.position, out GuildClaim claim))
             {
-                if (claim.guildId != reppedGuild.Id) return;
+                if (claim.guildId != reppedGuild.id) return;
                 claimData.RemoveClaim(packet.position);
                 BroadcastPacket(packet);
             }
         }
         else if (!claimData.TryGetClaim(packet.position, out GuildClaim _))
         {
-            claimData.AddClaim(packet.position, reppedGuild.Id);
+            int claimCount = claimData.GetClaimCount(reppedGuild);
+            int maxClaims = reppedGuild.MemberCount * 10;
+            if (claimCount >= maxClaims) return;
+
+            claimData.AddClaim(packet.position, reppedGuild.id);
             BroadcastPacket(packet);
         }
     }
@@ -353,6 +368,8 @@ public class ClaimManager : NetworkedGameSystem
                 List<GuildClaim> list = JsonConvert.DeserializeObject<List<GuildClaim>>(text)!;
                 if (list?.Count > 0)
                 {
+                    list = list.Where(i => guildManager.guildData.GetGuild(i.guildId) != null).ToList();
+
                     claimData.guildClaims = list.ToDictionary(i => i.position, i => i);
                 }
             }
