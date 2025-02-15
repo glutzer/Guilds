@@ -438,6 +438,7 @@ public class GuildGui : Gui
             if (guild.name == null)
             {
                 Console.WriteLine($"Guild id {guildId} had null name.");
+                continue;
             }
 
             WidgetGuildTab newTab = (WidgetGuildTab)new WidgetGuildTab(bg, (on) =>
