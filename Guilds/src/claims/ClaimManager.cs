@@ -328,7 +328,7 @@ public class ClaimManager : NetworkedGameSystem
             if (claimCount > 0 && GuildsConfig.Instance.OnlyClaimAdjacents && !IsAdjacent(packet.position, reppedGuild.id)) return;
 
             Vector2d playerPos = new(player.Entity.Pos.X, player.Entity.Pos.Z);
-            Vector2d chunkPos = new(packet.position.X * 32, packet.position.Z * 32);
+            Vector2d chunkPos = new(packet.position.X * 32 + 16, packet.position.Z * 32 + 16);
             if (Vector2d.Distance(playerPos, chunkPos) > GuildsConfig.Instance.ClaimRadius) return;
 
             claimData.AddClaim(packet.position, reppedGuild.id);

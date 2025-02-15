@@ -50,7 +50,7 @@ public class GuildsConfig
     public int MaxGuildCreationsPerPlayer { get; set; } = 1;
 
     // Distance a player must be to a chunk to claim it.
-    public int ClaimRadius { get; set; } = 256;
+    public int ClaimRadius { get; set; } = 64;
 
     // Player may only claim adjacent chunks, if a guild has claimed no chunks.
     public bool OnlyClaimAdjacents = true;
