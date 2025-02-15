@@ -1,5 +1,6 @@
 ﻿using MareLib;
 using OpenTK.Mathematics;
+using System.Linq;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 
@@ -27,18 +28,18 @@ public class WidgetGuildPlayerInfoPopup : Widget
             {
                 if (ownRole.HasPermissions(GuildPerms.Kick) && ownRole.authority > targetRole.authority)
                 {
-                    new WidgetGuildButton(this, () =>
+                    new WidgetHoldDownGuildButton(this, 2, () =>
                     {
+                        GuildRequestPacket packet = new()
+                        {
+                            targetPlayer = playerUid,
+                            guildId = guild.id,
+                            type = EnumGuildRequestPacket.Kick
+                        };
+
+                        manager.SendPacket(packet);
                         RemoveSelf();
                     }, $"Kick From {guild.name}", new Vector4(0.3f, 0, 0, 1), Vector4.One).Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
-                }
-
-                if (ownRole.HasPermissions(GuildPerms.Promote) && ownRole.authority > targetRole.authority)
-                {
-                    new WidgetGuildButton(this, () =>
-                    {
-                        RemoveSelf();
-                    }, "Set Role", new Vector4(0.3f, 0, 0, 1), Vector4.One).Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
                 }
             }
 
@@ -73,6 +74,48 @@ public class WidgetGuildPlayerInfoPopup : Widget
                         manager.SendPacket(packet);
                         RemoveSelf();
                     }, $"Invite To {guild.name}", new Vector4(0.3f, 0, 0, 1), Vector4.One).Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
+                }
+            }
+
+            // Roles.
+            if (guild.GetRole(playerUid) is RoleInfo promoteRole && ownRole.HasPermissions(GuildPerms.Promote) && promoteRole.authority < ownRole.authority)
+            {
+                foreach (RoleInfo role in guild.roles.OrderByDescending(x => x.authority))
+                {
+                    if (role.authority >= ownRole.authority) continue;
+
+                    if (role.id == promoteRole.id) continue;
+
+                    new WidgetHoldDownGuildButton(this, 2, () =>
+                    {
+                        GuildRequestPacket packet = new()
+                        {
+                            targetPlayer = playerUid,
+                            guildId = guild.id,
+                            type = EnumGuildRequestPacket.Promote,
+                            roleId = role.id
+                        };
+
+                        manager.SendPacket(packet);
+                        RemoveSelf();
+                    }, role.authority >= promoteRole.authority ? $"Promote To {role.name}" : $"Demote To {role.name}", new Vector4(0.3f, 0, 0, 1), Vector4.One).Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
+                }
+
+                if (ownRole.id == 1) // Founder.
+                {
+                    new WidgetHoldDownGuildButton(this, 10, () =>
+                    {
+                        GuildRequestPacket packet = new()
+                        {
+                            targetPlayer = playerUid,
+                            guildId = guild.id,
+                            type = EnumGuildRequestPacket.Promote,
+                            roleId = 1
+                        };
+
+                        manager.SendPacket(packet);
+                        RemoveSelf();
+                    }, $"Make Guild Leader", new Vector4(0.3f, 0, 0, 1), Vector4.One).Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
                 }
             }
         }

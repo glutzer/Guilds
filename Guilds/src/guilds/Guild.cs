@@ -251,9 +251,10 @@ public class GuildData
     {
         HashSet<int> invites = GetPlayersInvites(invitedUid);
 
+        guild.RemoveInvite(invitedUid);
+
         if (!invites.Remove(guild.id))
         {
-            guild.RemoveInvite(invitedUid);
             return false;
         }
 
@@ -451,11 +452,23 @@ public class GuildData
 
         if (actingRole == null || targetPlayerRole == null || role == null) return false;
 
+        if (actingRole.id == 1 && targetRole == 1)
+        {
+            return MakeGuildLeader(actingUid, targetPlayerUid, guild, targetPlayerRole);
+        }
+
         if (!actingRole.HasPermissions(GuildPerms.Promote)) return false;
         if (targetPlayerRole.authority >= actingRole.authority || role.authority >= actingRole.authority) return false;
 
         guild.ChangePlayersRole(targetPlayerUid, role.id);
 
+        return true;
+    }
+
+    public static bool MakeGuildLeader(string actingUid, string targetPlayerUid, Guild guild, RoleInfo targetPlayerRole)
+    {
+        guild.ChangePlayersRole(targetPlayerUid, 1);
+        guild.ChangePlayersRole(actingUid, targetPlayerRole.id);
         return true;
     }
 

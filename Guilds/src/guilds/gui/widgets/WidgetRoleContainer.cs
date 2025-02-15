@@ -41,7 +41,7 @@ public class WidgetRoleContainer : Widget
 
     public void OnUpdate(EnumClientGuildUpdate type, object? obj)
     {
-        if (type == EnumClientGuildUpdate.GuildRolesChanged)
+        if (type.HasFlag(EnumClientGuildUpdate.GuildRolesChanged))
         {
             List<Widget> selector = children.Where(t => t is RoleSelector).ToList();
 
@@ -77,7 +77,7 @@ public class RoleSelector : Widget
 {
     private int selectedRoleIndex = 0;
     private readonly WidgetToggleableButton[] roleSelectionButtons;
-    private readonly PermissionSelector? permissionSelector;
+    private PermissionSelector? permissionSelector;
     private Gui? gui;
 
     public RoleSelector(Widget? parent, Guild guild, RoleInfo ownRole) : base(parent)
@@ -143,7 +143,7 @@ public class RoleSelector : Widget
     {
         permissionSelector?.RemoveSelf();
 
-        new PermissionSelector(this, new RoleData(roleInfo, guildId))
+        permissionSelector = (PermissionSelector)new PermissionSelector(this, new RoleData(roleInfo, guildId))
             .Alignment(Align.RightTop, AlignFlags.OutsideH)
             .Percent(0, 0, 1, 1)
             .SetChildSizing(ChildSizing.Height | ChildSizing.Once);

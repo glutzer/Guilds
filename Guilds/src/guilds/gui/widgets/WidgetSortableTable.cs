@@ -3,6 +3,7 @@ using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Vintagestory.GameContent;
 
 namespace Guilds;
 
@@ -44,7 +45,7 @@ public class WidgetSortableTable<T> : Widget
         float totalWeight = columns.Sum(c => c.widthWeight);
         float totalAdvance = 0;
 
-        SetChildSizing(ChildSizing.Height);
+        SetChildSizing(ChildSizing.Height | ChildSizing.Once);
 
         Widget topButtonContainer = new WidgetContainer(this).Percent(0, 0, 1, 1).FixedHeight(12).Alignment(Align.CenterTop);
 

@@ -63,7 +63,7 @@ public class GuildGui : Gui
         {
             if (!IsOpened()) return;
 
-            if (type == EnumClientGuildUpdate.GuildAdded && obj is Guild eventGuild)
+            if (type.HasFlag(EnumClientGuildUpdate.GuildAdded) && obj is Guild eventGuild)
             {
                 if (eventGuild.HasMember(ownUid))
                 {
@@ -71,7 +71,7 @@ public class GuildGui : Gui
                 }
             }
 
-            if (type == EnumClientGuildUpdate.GuildRemoved && obj is bool inGuild)
+            if (type.HasFlag(EnumClientGuildUpdate.GuildRemoved) && obj is bool inGuild)
             {
                 if (inGuild)
                 {
@@ -80,7 +80,7 @@ public class GuildGui : Gui
                 }
             }
 
-            if (type == EnumClientGuildUpdate.GuildInfoChanged && obj is Guild guildInfoChanged)
+            if (type.HasFlag(EnumClientGuildUpdate.GuildInfoChanged) && obj is Guild guildInfoChanged)
             {
                 if (guildInfoChanged.HasMember(ownUid))
                 {
@@ -88,11 +88,27 @@ public class GuildGui : Gui
                 }
             }
 
-            if (type == EnumClientGuildUpdate.MetricsChanged)
+            if (type.HasFlag(EnumClientGuildUpdate.MetricsChanged))
             {
                 if (currentPage is 2 or 4)
                 {
                     RefreshPage(); // Refresh pages with player info.
+                }
+            }
+
+            if (type.HasFlag(EnumClientGuildUpdate.InviteChanged) && obj is Guild guild)
+            {
+                if (guild.HasMember(ownUid) || currentPage == 5)
+                {
+                    RefreshPage(); // Refresh guild page or invites page.
+                }
+            }
+
+            if (type.HasFlag(EnumClientGuildUpdate.GuildRolesChanged) && obj is Guild ownGuild)
+            {
+                if (ownGuild.HasMember(ownUid) && currentPage == 2)
+                {
+                    RefreshPage();
                 }
             }
         };
@@ -141,7 +157,7 @@ public class GuildGui : Gui
             RoleInfo? roleInfo = guild.GetRole(ownUid);
             if (roleInfo?.id == 1)
             {
-                new WidgetGuildButton(widget, () =>
+                new WidgetHoldDownGuildButton(widget, 5, () =>
                 {
                     GuildRequestPacket packet = new()
                     {
@@ -149,7 +165,7 @@ public class GuildGui : Gui
                         guildId = selectedGuildId
                     };
                     MainAPI.GetGameSystem<GuildManager>(EnumAppSide.Client).SendPacket(packet);
-                }, "Disband Guild", GuiThemes.ButtonColor, GuiThemes.ButtonFontColor).Alignment(Align.CenterTop).Fixed(0, 256, 32, 12);
+                }, "Disband Guild", GuiThemes.ButtonColor, GuiThemes.ButtonFontColor).Alignment(Align.CenterTop).Fixed(0, 196, 64, 16);
             }
             else
             {
@@ -381,11 +397,14 @@ public class GuildGui : Gui
         foreach (PageEntry entry in pages)
         {
             int i = index;
-            WidgetGuildTab guildTab = (WidgetGuildTab)new WidgetGuildTab(bg, (on) =>
+            new WidgetGuildTab(bg, (on) =>
             {
                 foreach (WidgetGuildTab tab in tabs) tab.Release();
                 SwapToPage(i);
-            }, true, new Vector4(0.5f, 0, 0, 1), entry.name).Fixed(0, index * 12, 50, 12).Alignment(Align.LeftTop, AlignFlags.OutsideH);
+            }, true, new Vector4(0.5f, 0, 0, 1), entry.name)
+                .Fixed(0, index * 12, 50, 12)
+                .Alignment(Align.LeftTop, AlignFlags.OutsideH)
+                .As(out WidgetGuildTab guildTab);
             index++;
             tabs.Add(guildTab);
 
@@ -415,6 +434,11 @@ public class GuildGui : Gui
         {
             Guild? guild = manager.guildData.GetGuild(guildId);
             if (guild == null) continue;
+
+            if (guild.name == null)
+            {
+                Console.WriteLine($"Guild id {guildId} had null name.");
+            }
 
             WidgetGuildTab newTab = (WidgetGuildTab)new WidgetGuildTab(bg, (on) =>
             {

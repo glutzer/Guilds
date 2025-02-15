@@ -20,7 +20,8 @@ public enum EnumClientGuildUpdate
     GuildRolesChanged = 4, // Roles changed or a players role changed.
     GuildInfoChanged = 8, // Guild name/color etc changed.
     GuildMembersChanged = 16, // Guild invites or guild member changes.
-    MetricsChanged = 32 // Metrics of a player changed.
+    MetricsChanged = 32, // Metrics of a player changed.
+    InviteChanged = 64
 }
 
 /// <summary>
@@ -248,7 +249,12 @@ public class GuildManager : NetworkedGameSystem
             if (guildData.AcceptInvite(playerUid, guild))
             {
                 // Events.
-                TriggerClientUpdate(EnumClientGuildUpdate.GuildMembersChanged, guild);
+                TriggerClientUpdate(EnumClientGuildUpdate.GuildMembersChanged | EnumClientGuildUpdate.InviteChanged, guild);
+
+                if (playerUid == MainAPI.Capi.World.Player.PlayerUID)
+                {
+                    TriggerClientUpdate(EnumClientGuildUpdate.GuildAdded, guild);
+                }
             }
 
             return;
@@ -259,6 +265,7 @@ public class GuildManager : NetworkedGameSystem
             if (guildData.RemoveInvite(playerUid, guild, playerUid))
             {
                 // Events.
+                TriggerClientUpdate(EnumClientGuildUpdate.InviteChanged, guild);
             }
         }
 
@@ -309,6 +316,11 @@ public class GuildManager : NetworkedGameSystem
             {
                 // Events.
                 TriggerClientUpdate(EnumClientGuildUpdate.GuildMembersChanged, guild);
+
+                if (playerUid == MainAPI.Capi.World.Player.PlayerUID)
+                {
+                    TriggerClientUpdate(EnumClientGuildUpdate.GuildRemoved, true);
+                }
             }
 
             return;
@@ -323,6 +335,7 @@ public class GuildManager : NetworkedGameSystem
             if (guildData.AddInvite(playerUid, guild, packet.targetPlayer))
             {
                 // Events
+                TriggerClientUpdate(EnumClientGuildUpdate.InviteChanged, guild);
             }
 
             return;
@@ -333,6 +346,7 @@ public class GuildManager : NetworkedGameSystem
             if (guildData.RemoveInvite(playerUid, guild, packet.targetPlayer))
             {
                 // Events.
+                TriggerClientUpdate(EnumClientGuildUpdate.InviteChanged, guild);
             }
 
             return;
