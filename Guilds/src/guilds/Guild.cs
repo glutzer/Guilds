@@ -83,7 +83,7 @@ public class RoleInfo
         return this;
     }
 
-    public void ChangeRole(RoleUpdatePacket packet)
+    public void ChangeRole(RoleUpdateInfo packet)
     {
         name = packet.newName!; // Checked null beforehand.
         authority = packet.newAuthority;
@@ -214,7 +214,7 @@ public class GuildData
         return guildList;
     }
 
-    public bool AddInvite(string playerUid, Guild guild, string invitedUid)
+    public bool TryAddInvite(string playerUid, Guild guild, string invitedUid)
     {
         RoleInfo? role = guild.GetRole(playerUid);
         if (role == null) return false;
@@ -229,7 +229,7 @@ public class GuildData
         return true;
     }
 
-    public bool RemoveInvite(string playerUid, Guild guild, string invitedUid)
+    public bool TryRemoveInvite(string playerUid, Guild guild, string invitedUid)
     {
         if (playerUid != invitedUid)
         {
@@ -247,7 +247,7 @@ public class GuildData
         return true;
     }
 
-    public bool AcceptInvite(string invitedUid, Guild guild)
+    public bool TryAcceptInvite(string invitedUid, Guild guild)
     {
         HashSet<int> invites = GetPlayersInvites(invitedUid);
 
@@ -288,6 +288,12 @@ public class GuildData
         return guildList;
     }
 
+    public Guild? GetGuildByName(string name)
+    {
+        Guild? guild = guilds.Values.FirstOrDefault(x => x.name == name);
+        return guild;
+    }
+
     public Guild? GetGuild(int guildId)
     {
         if (guilds.TryGetValue(guildId, out Guild? guild))
@@ -307,7 +313,7 @@ public class GuildData
         return true;
     }
 
-    public bool RemovePlayerFromGuild(string playerUid, Guild guild)
+    public bool TryRemovePlayerFromGuild(string playerUid, Guild guild)
     {
         RoleInfo? role = guild.GetRole(playerUid);
         if (role?.id == 1) return false;
@@ -339,14 +345,14 @@ public class GuildData
         return true;
     }
 
-    public bool CreateGuild(string guildName, IPlayer foundingPlayer)
+    public bool TryCreateGuild(string guildName, string foundingPlayerUid)
     {
         // Guild exists with this name already.
         if (!IsGuildNameAllowed(guildName)) return false;
 
-        if (GetPlayersGuilds(foundingPlayer.PlayerUID).Count > 10) return false; // Too many guilds.
+        if (GetPlayersGuilds(foundingPlayerUid).Count > 10) return false; // Too many guilds.
 
-        Guild guild = new(foundingPlayer, guildName, nextGuildId);
+        Guild guild = new(foundingPlayerUid, guildName, nextGuildId);
         nextGuildId++;
         guilds[guild.id] = guild;
 
@@ -357,7 +363,7 @@ public class GuildData
         color.Z = MathF.Round(color.Z, 2);
         guild.SetColor(color);
 
-        GetPlayersGuilds(foundingPlayer.PlayerUID).Add(guild.id);
+        GetPlayersGuilds(foundingPlayerUid).Add(guild.id);
 
         return true;
     }
@@ -379,7 +385,7 @@ public class GuildData
         return true;
     }
 
-    public bool KickPlayer(string actingUid, string targetPlayerUid, Guild guild)
+    public bool TryKickPlayer(string actingUid, string targetPlayerUid, Guild guild)
     {
         RoleInfo? actingRole = guild.GetRole(actingUid);
         RoleInfo? targetPlayerRole = guild.GetRole(targetPlayerUid);
@@ -388,16 +394,16 @@ public class GuildData
         if (targetPlayerRole.authority >= actingRole.authority || !actingRole.HasPermissions(GuildPerms.Kick)) return false;
 
         // Remove player from guild.
-        return RemovePlayerFromGuild(targetPlayerUid, guild);
+        return TryRemovePlayerFromGuild(targetPlayerUid, guild);
     }
 
     #endregion
 
     #region Roles
 
-    public static bool AddRole(IPlayer player, Guild guild)
+    public static bool TryAddRole(string playerUid, Guild guild)
     {
-        RoleInfo? role = guild.GetRole(player.PlayerUID);
+        RoleInfo? role = guild.GetRole(playerUid);
         if (role == null) return false;
 
         if (!role.HasPermissions(GuildPerms.ManageRoles)) return false;
@@ -407,9 +413,9 @@ public class GuildData
         return true;
     }
 
-    public static bool RemoveRole(IPlayer player, Guild guild, int roleId)
+    public static bool TryRemoveRole(string playerUid, Guild guild, int roleId)
     {
-        RoleInfo? role = guild.GetRole(player.PlayerUID);
+        RoleInfo? role = guild.GetRole(playerUid);
         if (role == null) return false;
 
         if (!role.HasPermissions(GuildPerms.ManageRoles)) return false;
@@ -420,21 +426,21 @@ public class GuildData
         return guild.RemoveRole(roleId);
     }
 
-    public bool UpdateRole(IPlayer player, RoleUpdatePacket packet)
+    public bool TryUpdateRole(string playerUid, RoleUpdateInfo packet, int guildId, int roleId)
     {
         if (packet.newName == null) return false;
 
-        Guild? guild = GetGuild(packet.guildId);
+        Guild? guild = GetGuild(guildId);
         if (guild == null) return false;
 
-        RoleInfo? role = guild.GetRole(player.PlayerUID);
+        RoleInfo? role = guild.GetRole(playerUid);
         if (role == null) return false;
 
         if (!role.HasPermissions(GuildPerms.ManageRoles)) return false;
 
         if (packet.newAuthority >= role.authority) packet.newAuthority = role.authority - 1;
 
-        RoleInfo? targetRole = guild.GetRole(packet.roleId);
+        RoleInfo? targetRole = guild.GetRole(roleId);
         if (targetRole == null) return false;
 
         if (targetRole.authority >= role.authority) return false;
@@ -443,7 +449,7 @@ public class GuildData
         return true;
     }
 
-    public static bool ChangeRole(string actingUid, string targetPlayerUid, Guild guild, int targetRole)
+    public static bool TryChangeRole(string actingUid, string targetPlayerUid, Guild guild, int targetRole)
     {
         // Get acting player role.
         RoleInfo? actingRole = guild.GetRole(actingUid);
@@ -689,7 +695,7 @@ public class Guild
         return members.ContainsKey(playerUid);
     }
 
-    public Guild(IPlayer foundingPlayer, string name, int id)
+    public Guild(string foundingPlayerUid, string name, int id)
     {
         this.name = name;
         this.id = id;
@@ -700,8 +706,8 @@ public class Guild
         roles = InitializeRoles();
 
         // Default founder to founder role.
-        MembershipInfo membershipInfo = new(foundingPlayer.PlayerUID);
-        members[foundingPlayer.PlayerUID] = membershipInfo;
+        MembershipInfo membershipInfo = new(foundingPlayerUid);
+        members[foundingPlayerUid] = membershipInfo;
         membershipInfo.roleId = 1;
     }
 

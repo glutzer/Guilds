@@ -9,11 +9,11 @@ public class WidgetGuildScrollBar : WidgetBaseScrollBar
     public NineSliceTexture cursorTex;
     private Vector4 color;
 
-    public WidgetGuildScrollBar(Widget? parent, Widget scrollWidget, Vector4 color, int stepsPerPage = 10) : base(parent, scrollWidget, stepsPerPage)
+    public WidgetGuildScrollBar(Widget? parent, Widget scrollWidget, int stepsPerPage = 10) : base(parent, scrollWidget, stepsPerPage)
     {
         background = GuiThemes.ScrollBar;
         cursorTex = GuiThemes.Button;
-        this.color = color;
+        color = GuiThemes.ButtonColor;
     }
 
     protected override void RenderBackground(int x, int y, int width, int height, MareShader shader)
@@ -27,7 +27,19 @@ public class WidgetGuildScrollBar : WidgetBaseScrollBar
 
     protected override void RenderCursor(int x, int y, int width, int height, MareShader shader, EnumButtonState barState)
     {
-        shader.Uniform("color", color);
+        Vector4 c = color;
+
+        if (barState == EnumButtonState.Active)
+        {
+            c.Xyz *= 0.8f;
+        }
+
+        if (barState == EnumButtonState.Hovered)
+        {
+            c.Xyz *= 1.2f;
+        }
+
+        shader.Uniform("color", c);
         RenderTools.RenderNineSlice(cursorTex, shader, x, y, width, height);
         shader.Uniform("color", Vector4.One);
     }

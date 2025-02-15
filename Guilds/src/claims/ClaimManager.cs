@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using MareLib;
 using Newtonsoft.Json;
+using OpenTK.Mathematics;
 using ProtoBuf;
 using System;
 using System.Collections.Generic;
@@ -269,6 +270,31 @@ public class ClaimManager : NetworkedGameSystem
         }
     }
 
+    public static int GetMaxClaims(Guild guild)
+    {
+        return guild.MemberCount * 20;
+    }
+
+    public bool IsAdjacent(GridPos2d position, int guildId)
+    {
+        foreach (GridPos2d pos in position.Adjacents())
+        {
+            if (claimData.TryGetClaim(pos, out GuildClaim claim) && claim.guildId == guildId) return true;
+        }
+
+        return false;
+    }
+
+    public bool IsAdjacentToEmpty(GridPos2d position, int guildId)
+    {
+        foreach (GridPos2d pos in position.Adjacents())
+        {
+            if (!claimData.TryGetClaim(pos, out GuildClaim claim) || claim.guildId != guildId) return true;
+        }
+
+        return false;
+    }
+
     /// <summary>
     /// Client may send a claim packet to request a claim for his currently repped guild.
     /// </summary>
@@ -288,6 +314,8 @@ public class ClaimManager : NetworkedGameSystem
             if (claimData.TryGetClaim(packet.position, out GuildClaim claim))
             {
                 if (claim.guildId != reppedGuild.id) return;
+                int claimCount = claimData.GetClaimCount(reppedGuild);
+                if (claimCount > 1 && GuildsConfig.Instance.OnlyClaimAdjacents && !IsAdjacentToEmpty(packet.position, reppedGuild.id)) return;
                 claimData.RemoveClaim(packet.position);
                 BroadcastPacket(packet);
             }
@@ -295,8 +323,13 @@ public class ClaimManager : NetworkedGameSystem
         else if (!claimData.TryGetClaim(packet.position, out GuildClaim _))
         {
             int claimCount = claimData.GetClaimCount(reppedGuild);
-            int maxClaims = reppedGuild.MemberCount * 10;
+            int maxClaims = GetMaxClaims(reppedGuild);
             if (claimCount >= maxClaims) return;
+            if (claimCount > 0 && GuildsConfig.Instance.OnlyClaimAdjacents && !IsAdjacent(packet.position, reppedGuild.id)) return;
+
+            Vector2d playerPos = new(player.Entity.Pos.X, player.Entity.Pos.Z);
+            Vector2d chunkPos = new(packet.position.X * 32, packet.position.Z * 32);
+            if (Vector2d.Distance(playerPos, chunkPos) > GuildsConfig.Instance.ClaimRadius) return;
 
             claimData.AddClaim(packet.position, reppedGuild.id);
             BroadcastPacket(packet);

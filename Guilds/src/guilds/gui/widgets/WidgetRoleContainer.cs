@@ -1,8 +1,5 @@
 ﻿using MareLib;
-using OpenTK.Mathematics;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using Vintagestory.API.Common;
 
 namespace Guilds;
@@ -14,8 +11,6 @@ public class WidgetRoleContainer : Widget
 
     public WidgetRoleContainer(Widget? parent, GuildGui guildGui) : base(parent)
     {
-        GuildManager.OnClientUpdate += OnUpdate;
-
         this.guildGui = guildGui;
         guild = guildGui.manager.guildData.GetGuild(guildGui.selectedGuildId);
         if (guild == null) return;
@@ -25,7 +20,7 @@ public class WidgetRoleContainer : Widget
 
         if (!ownRole.HasPermissions(GuildPerms.ManageRoles))
         {
-            new WidgetTextLine(this, FontRegistry.GetFont("friz"), "No role permissions.", Vector4.One, true).Alignment(Align.Center).FixedSize(64, 32);
+            new WidgetTextLine(this, GuiThemes.Font, "No role permissions.", GuiThemes.TextColor, true).Alignment(Align.Center).FixedSize(64, 32);
             return;
         }
 
@@ -34,40 +29,35 @@ public class WidgetRoleContainer : Widget
             .Percent(0, 0, 0.5f, 1f);
     }
 
-    public override void Dispose()
-    {
-        GuildManager.OnClientUpdate -= OnUpdate;
-    }
+    //public void OnUpdate(EnumClientGuildUpdate type, object? obj)
+    //{
+    //    if (type.HasFlag(EnumClientGuildUpdate.GuildRolesChanged))
+    //    {
+    //        List<Widget> selector = children.Where(t => t is RoleSelector).ToList();
 
-    public void OnUpdate(EnumClientGuildUpdate type, object? obj)
-    {
-        if (type.HasFlag(EnumClientGuildUpdate.GuildRolesChanged))
-        {
-            List<Widget> selector = children.Where(t => t is RoleSelector).ToList();
+    //        if (selector.Count == 0) return;
+    //        foreach (Widget select in selector)
+    //        {
+    //            select.RemoveSelf();
+    //        }
 
-            if (selector.Count == 0) return;
-            foreach (Widget select in selector)
-            {
-                select.RemoveSelf();
-            }
+    //        RoleInfo? ownRole = guild?.GetRole(guildGui.ownUid);
+    //        if (ownRole == null || guild == null) return;
 
-            RoleInfo? ownRole = guild?.GetRole(guildGui.ownUid);
-            if (ownRole == null || guild == null) return;
+    //        if (!ownRole.HasPermissions(GuildPerms.ManageRoles))
+    //        {
+    //            new WidgetTextLine(this, FontRegistry.GetFont("friz"), "No role permissions.", Vector4.One, true).Alignment(Align.Center).FixedSize(64, 32);
+    //            return;
+    //        }
 
-            if (!ownRole.HasPermissions(GuildPerms.ManageRoles))
-            {
-                new WidgetTextLine(this, FontRegistry.GetFont("friz"), "No role permissions.", Vector4.One, true).Alignment(Align.Center).FixedSize(64, 32);
-                return;
-            }
+    //        new RoleSelector(this, guild, ownRole)
+    //        .Alignment(Align.LeftTop)
+    //        .Percent(0, 0, 0.5f, 1f);
 
-            new RoleSelector(this, guild, ownRole)
-            .Alignment(Align.LeftTop)
-            .Percent(0, 0, 0.5f, 1f);
-
-            SetBounds();
-            guildGui.MarkForRepartition();
-        }
-    }
+    //        SetBounds();
+    //        guildGui.MarkForRepartition();
+    //    }
+    //}
 }
 
 /// <summary>
@@ -92,26 +82,26 @@ public class RoleSelector : Widget
         // Add side by side add/remove role buttons.
         new WidgetGuildButton(this, () =>
         {
-            GuildRequestPacket packet = new()
+            GuildPacket packet = new()
             {
-                type = EnumGuildRequestPacket.AddRole,
+                type = EnumGuildPacket.AddRole,
                 guildId = guild.id
             };
 
             manager.SendPacket(packet);
-        }, "Add Role", GuiThemes.ButtonColor, GuiThemes.ButtonFontColor).Alignment(Align.CenterTop).Fixed(-16, 0, 32, 12);
+        }, "Add Role").Alignment(Align.CenterTop).Fixed(-16, 0, 32, 12);
 
         new WidgetGuildButton(this, () =>
         {
-            GuildRequestPacket packet = new()
+            GuildPacket packet = new()
             {
-                type = EnumGuildRequestPacket.RemoveRole,
+                type = EnumGuildPacket.RemoveRole,
                 guildId = guild.id,
                 roleId = selectedRoleIndex
             };
 
             manager.SendPacket(packet);
-        }, "Remove Role", GuiThemes.ButtonColor, GuiThemes.ButtonFontColor).Alignment(Align.CenterTop).Fixed(16, 0, 32, 12);
+        }, "Remove Role").Alignment(Align.CenterTop).Fixed(16, 0, 32, 12);
 
         for (int i = 0; i < roleSelectionButtons.Length; i++)
         {
@@ -119,15 +109,12 @@ public class RoleSelector : Widget
 
             int indexOfThis = i;
 
-            Vector4 color = GuiThemes.ButtonColor;
-            if (role.authority >= ownRole.authority) color = new(0.1f, 0.1f, 0.1f, 1);
-
             roleSelectionButtons[i] = (WidgetToggleableButton)new WidgetToggleableButton(this, (up) =>
             {
                 roleSelectionButtons[selectedRoleIndex].Release();
                 selectedRoleIndex = indexOfThis;
                 UpdatePermissions(role, guild.id);
-            }, role.name, color).Alignment(Align.CenterTop).Fixed(0, (i * 12) + 24, 64, 12);
+            }, role.name).Alignment(Align.CenterTop).Fixed(0, (i * 12) + 24, 64, 12);
 
             // Button will never be able to be selected or let up now.
             if (role.authority >= ownRole.authority) roleSelectionButtons[i].LockDown();
@@ -148,7 +135,6 @@ public class RoleSelector : Widget
             .Percent(0, 0, 1, 1)
             .SetChildSizing(ChildSizing.Height | ChildSizing.Once);
 
-        SetBounds();
         gui?.MarkForRepartition();
     }
 }
@@ -200,7 +186,7 @@ public class PermissionSelector : Widget
                 {
                     roleData.guildPerms &= ~enumType;
                 }
-            }, enumType.ToString(), GuiThemes.ButtonColor, false)
+            }, enumType.ToString(), false)
                 .Alignment(Align.CenterTop)
                 .Fixed(0, index * 8, 64, 8);
 
@@ -217,17 +203,17 @@ public class PermissionSelector : Widget
 
         new WidgetGuildButton(this, () =>
         {
-            RoleUpdatePacket packet = new()
+            RoleUpdateInfo packet = new()
             {
-                guildId = roleData.guildId,
-                roleId = roleData.roleId,
                 newName = roleData.newName,
                 newPerms = roleData.guildPerms,
                 newAuthority = roleData.authority
             };
 
-            MainAPI.GetGameSystem<GuildManager>(EnumAppSide.Client).SendPacket(packet);
-        }, "Apply Roles", GuiThemes.ButtonColor, GuiThemes.ButtonFontColor)
+            GuildPacket guildPacket = GuildPacket.Create<RoleUpdateInfo>(EnumGuildPacket.UpdateRole, packet, null, roleData.guildId, roleData.roleId);
+
+            MainAPI.GetGameSystem<GuildManager>(EnumAppSide.Client).SendPacket(guildPacket);
+        }, "Apply Roles")
             .Alignment(Align.CenterTop)
             .Fixed(0, (index * 8) + 12, 64, 12);
     }

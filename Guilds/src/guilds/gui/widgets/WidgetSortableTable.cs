@@ -3,7 +3,6 @@ using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Vintagestory.GameContent;
 
 namespace Guilds;
 
@@ -69,7 +68,7 @@ public class WidgetSortableTable<T> : Widget
 
                 UpdateData();
             },
-            $"{column.name}", new Vector4(0.5f, 0, 0, 1f))
+            $"{column.name}")
                 .Percent(totalAdvance, 0, ratio, 1)
                 .FixedHeight(12)
                 .Alignment(Align.LeftTop);

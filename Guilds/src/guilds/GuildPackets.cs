@@ -4,38 +4,41 @@ using Vintagestory.API.Util;
 
 namespace Guilds;
 
-/// <summary>
-/// Send from client -> server to update a role.
-/// </summary>
 [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
-public class RoleUpdatePacket
-{
-    public int guildId;
-    public int roleId;
-    public string? newName;
-    public int newAuthority;
-    public GuildPerms newPerms;
-
-    /// <summary>
-    /// Only set on server when sending back to clients.
-    /// </summary>
-    public string? fromUid;
-}
-
-[ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
-public enum EnumGuildRequestPacket
+public enum EnumGuildPacket
 {
     Invite,
     CancelInvite,
     AcceptInvite,
+
     Kick,
     Promote,
+
     AddRole,
     RemoveRole,
+    UpdateRole,
+
     Create,
     Leave,
     Disband,
+    UpdateInfo,
+
     RepGuild
+}
+
+[ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
+public class RoleUpdateInfo
+{
+    public string? newName;
+    public int newAuthority;
+    public GuildPerms newPerms;
+}
+
+[ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
+public class GuildUpdateInfo
+{
+    public string? name;
+    public Vector3 color;
 }
 
 /// <summary>
@@ -43,9 +46,9 @@ public enum EnumGuildRequestPacket
 /// Broadcasted back to clients.
 /// </summary>
 [ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
-public class GuildRequestPacket
+public class GuildPacket
 {
-    public EnumGuildRequestPacket type;
+    public EnumGuildPacket type;
     public string? targetPlayer;
     public int roleId;
     public int guildId;
@@ -56,25 +59,19 @@ public class GuildRequestPacket
     /// </summary>
     public string? fromUid;
 
+    public static GuildPacket Create<T>(EnumGuildPacket type, T data, string? targetPlayer = null, int guildId = 0, int roleId = 0)
+    {
+        return new GuildPacket { type = type, targetPlayer = targetPlayer, roleId = roleId, guildId = guildId, data = SerializerUtil.Serialize(data) };
+    }
+
+    public static GuildPacket Create(EnumGuildPacket type, string? targetPlayer = null, int guildId = 0, int roleId = 0, byte[]? data = null)
+    {
+        return new GuildPacket { type = type, targetPlayer = targetPlayer, roleId = roleId, guildId = guildId, data = data };
+    }
+
     public T? ReadData<T>()
     {
         if (data == null) return default;
         return SerializerUtil.Deserialize<T>(data);
     }
-}
-
-/// <summary>
-/// Send from client -> server to update guild info.
-/// </summary>
-[ProtoContract(ImplicitFields = ImplicitFields.AllFields)]
-public class GuildInfoPacket
-{
-    public int guildId;
-    public string? name;
-    public Vector3 color;
-
-    /// <summary>
-    /// Only set on server when sending back to clients.
-    /// </summary>
-    public string? fromUid;
 }

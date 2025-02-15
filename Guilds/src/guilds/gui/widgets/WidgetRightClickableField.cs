@@ -7,7 +7,7 @@ using Vintagestory.API.Common;
 namespace Guilds;
 
 /// <summary>
-/// Field that can be right clicked
+/// Field that can be right clicked.
 /// </summary>
 public class WidgetRightClickableField : WidgetBaseButton
 {
@@ -16,7 +16,7 @@ public class WidgetRightClickableField : WidgetBaseButton
 
     public WidgetRightClickableField(Widget? parent, Action onClick, string text) : base(parent, onClick)
     {
-        this.text = new TextObject(text, FontRegistry.GetFont("friz"), 50, Vector4.One);
+        this.text = new TextObject(text, GuiThemes.Font, 50, GuiThemes.TextColor);
 
         OnResize += () =>
         {
@@ -26,7 +26,7 @@ public class WidgetRightClickableField : WidgetBaseButton
 
     protected override void GuiEvents_MouseDown(MouseEvent obj)
     {
-        if (obj.Button == EnumMouseButton.Left) return;
+        if (obj.Button != EnumMouseButton.Right) return;
         base.GuiEvents_MouseDown(obj);
     }
 

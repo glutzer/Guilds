@@ -7,9 +7,11 @@ namespace Guilds;
 
 public static class GuiThemes
 {
+    public static Font Font => FontRegistry.GetFont("friz");
+
     public static Vector4 ButtonColor => new(0.5f, 0, 0, 1);
+    public static Vector4 TextColor => new(0.8f, 0.7f, 0.3f, 1);
     public static Vector4 DarkColor => new(0.1f, 0.1f, 0.1f, 1);
-    public static Vector4 ButtonFontColor => new(0.8f, 0.8f, 0.8f, 1);
 
     private static readonly Dictionary<string, object> cache = new();
 

@@ -6,7 +6,6 @@ namespace Guilds;
 
 /// <summary>
 /// Button that has a pre-defined texture for guilds and adjusts font scale to text.
-/// Font color is opposite the button color for readability.
 /// </summary>
 public class WidgetGuildButton : WidgetBaseButton
 {
@@ -16,12 +15,12 @@ public class WidgetGuildButton : WidgetBaseButton
 
     private readonly NineSliceTexture texture;
 
-    public WidgetGuildButton(Widget? parent, Action onClick, string text, Vector4 color, Vector4 fontColor) : base(parent, onClick)
+    public WidgetGuildButton(Widget? parent, Action onClick, string text) : base(parent, onClick)
     {
-        this.color = color;
-        this.fontColor = fontColor;
+        color = GuiThemes.ButtonColor;
+        fontColor = GuiThemes.TextColor;
 
-        textObj = new TextObject(text, FontRegistry.GetFont("friz"), 50, fontColor);
+        textObj = new TextObject(text, GuiThemes.Font, 50, fontColor);
 
         // Fit text object into the button.
         OnResize += () =>

@@ -19,15 +19,16 @@ public class WidgetHoldDownGuildButton : Widget
 
     protected TextObject text;
 
-    public WidgetHoldDownGuildButton(Widget? parent, float time, Action onClick, string text, Vector4 color, Vector4 fontColor) : base(parent)
+    public WidgetHoldDownGuildButton(Widget? parent, float time, Action onClick, string text) : base(parent)
     {
+        color = GuiThemes.ButtonColor;
+        fontColor = GuiThemes.TextColor;
+
         this.time = time;
         this.onClick = onClick;
         texture = GuiThemes.Button;
-        this.color = color;
-        this.fontColor = fontColor;
 
-        this.text = new TextObject(text, FontRegistry.GetFont("friz"), 50, fontColor);
+        this.text = new TextObject(text, GuiThemes.Font, 50, fontColor);
 
         OnResize += () =>
         {

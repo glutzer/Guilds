@@ -13,17 +13,17 @@ public class WidgetToggleableButton : WidgetBaseToggleableButton
     private readonly TextObject textObj;
     private Vector4 color;
 
-    public WidgetToggleableButton(Widget? parent, Action<bool> onClick, string text, Vector4 color, bool lockedDown = true) : base(parent, onClick, !lockedDown)
+    public WidgetToggleableButton(Widget? parent, Action<bool> onClick, string text, bool lockedDown = true) : base(parent, onClick, !lockedDown)
     {
         texture = GuiThemes.Title;
-        textObj = new TextObject(text, FontRegistry.GetFont("friz"), 50, Vector4.One);
+        textObj = new TextObject(text, GuiThemes.Font, 50, GuiThemes.TextColor);
 
         OnResize += () =>
         {
             textObj.SetScaleFromWidget(this, 0.9f, 0.5f);
         };
 
-        this.color = color;
+        color = GuiThemes.ButtonColor;
 
         this.onClick += (up) =>
         {
@@ -42,7 +42,7 @@ public class WidgetToggleableButton : WidgetBaseToggleableButton
     public override void OnRender(float dt, MareShader shader)
     {
         Vector4 c = color;
-        Vector4 f = Vector4.One;
+        Vector4 f = GuiThemes.TextColor;
 
         if (state == EnumButtonState.Active)
         {

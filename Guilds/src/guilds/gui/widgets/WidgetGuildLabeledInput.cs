@@ -20,11 +20,11 @@ public class WidgetGuildLabeledInput : Widget
         this.onNewText = onNewText;
         this.isTextValid = isTextValid;
 
-        textBox = (WidgetTextBoxSingle)new WidgetTextBoxSingle(this, FontRegistry.GetFont("friz"), GuiThemes.ButtonFontColor, false, true, OnNewText, defaultText)
+        textBox = (WidgetTextBoxSingle)new WidgetTextBoxSingle(this, GuiThemes.Font, GuiThemes.TextColor, false, true, OnNewText, defaultText)
             .Alignment(Align.LeftTop)
             .Percent(0.5f, 0, 0.5f, 1);
 
-        new WidgetTextLine(this, FontRegistry.GetFont("friz"), label, GuiThemes.ButtonFontColor, true)
+        new WidgetTextLine(this, GuiThemes.Font, label, GuiThemes.TextColor, true)
             .Alignment(Align.LeftTop)
             .Percent(0, 0, 0.5f, 1);
 
