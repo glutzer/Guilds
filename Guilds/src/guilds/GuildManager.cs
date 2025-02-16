@@ -60,7 +60,7 @@ public class GuildManager : NetworkedGameSystem
                 SendPacket(guildData, player); // Sync full data.
             };
 
-            MainAPI.Sapi.Event.PlayerLeave += player =>
+            MainAPI.Sapi.Event.PlayerDisconnect += player =>
             {
                 PlayerMetrics metrics = guildData.GetMetrics(player);
                 metrics.UpdateMetrics(player);

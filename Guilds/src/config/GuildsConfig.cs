@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using ProtoBuf;
 using System.IO;
 using Vintagestory.API.Config;
 
@@ -7,6 +8,7 @@ namespace Guilds;
 /// <summary>
 /// Server-side config for guilds.
 /// </summary>
+[ProtoContract(ImplicitFields = ImplicitFields.AllPublic)]
 public class GuildsConfig
 {
     public static void LoadInstance()
@@ -44,21 +46,21 @@ public class GuildsConfig
     public static GuildsConfig Instance { get; private set; } = null!;
 
     // Max guilds player may join.
-    public int MaxGuildsPerPlayer { get; set; } = 10;
+    public int maxGuildsPerPlayer = 10;
 
     // Max guilds player may create. A player may not be promoted to guild leader if he is one already.
-    public int MaxGuildCreationsPerPlayer { get; set; } = 1;
+    public int maxGuildCreationsPerPlayer = 1;
 
     // Distance a player must be to a chunk to claim it.
-    public int ClaimRadius { get; set; } = 64;
+    public int claimRadius = 64;
 
     // Player may only claim adjacent chunks, if a guild has claimed no chunks.
-    public bool OnlyClaimAdjacents = true;
+    public bool onlyClaimAdjacents = true;
 
     // Item paid to claim one chunk.
-    public string ClaimItemCode { get; set; } = "game:gear-temporal";
-    public int ClaimItemCount { get; set; } = 1;
+    public string claimItemCode = "game:gear-temporal";
+    public int claimItemCount = 1;
 
     // Guilds can't exceed this claim count.
-    public int TotalMaximumClaims { get; set; } = int.MaxValue;
+    public int totalMaximumClaims = int.MaxValue;
 }

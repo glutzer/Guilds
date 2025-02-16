@@ -226,7 +226,7 @@ public class ClaimPacket
     public int guildId;
 }
 
-[GameSystem]
+[GameSystem(0.1)]
 public class ClaimManager : NetworkedGameSystem
 {
     public ClaimData claimData = new();
@@ -315,7 +315,7 @@ public class ClaimManager : NetworkedGameSystem
             {
                 if (claim.guildId != reppedGuild.id) return;
                 int claimCount = claimData.GetClaimCount(reppedGuild);
-                if (claimCount > 1 && GuildsConfig.Instance.OnlyClaimAdjacents && !IsAdjacentToEmpty(packet.position, reppedGuild.id)) return;
+                if (claimCount > 1 && GuildsConfig.Instance.onlyClaimAdjacents && !IsAdjacentToEmpty(packet.position, reppedGuild.id)) return;
                 claimData.RemoveClaim(packet.position);
                 BroadcastPacket(packet);
             }
@@ -325,11 +325,11 @@ public class ClaimManager : NetworkedGameSystem
             int claimCount = claimData.GetClaimCount(reppedGuild);
             int maxClaims = GetMaxClaims(reppedGuild);
             if (claimCount >= maxClaims) return;
-            if (claimCount > 0 && GuildsConfig.Instance.OnlyClaimAdjacents && !IsAdjacent(packet.position, reppedGuild.id)) return;
+            if (claimCount > 0 && GuildsConfig.Instance.onlyClaimAdjacents && !IsAdjacent(packet.position, reppedGuild.id)) return;
 
             Vector2d playerPos = new(player.Entity.Pos.X, player.Entity.Pos.Z);
             Vector2d chunkPos = new(packet.position.X * 32 + 16, packet.position.Z * 32 + 16);
-            if (Vector2d.Distance(playerPos, chunkPos) > GuildsConfig.Instance.ClaimRadius) return;
+            if (Vector2d.Distance(playerPos, chunkPos) > GuildsConfig.Instance.claimRadius) return;
 
             claimData.AddClaim(packet.position, reppedGuild.id);
             BroadcastPacket(packet);
