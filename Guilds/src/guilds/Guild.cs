@@ -125,6 +125,8 @@ public class GuildData
     public Dictionary<string, PlayerMetrics> playerMetrics = new();
     public IEnumerable<PlayerMetrics> AllMetrics => playerMetrics.Values;
 
+    public bool isClient = false;
+
     public bool IsValidUid(string uid)
     {
         // If a player is not in the metrics, he is not registered on the server.
@@ -348,9 +350,17 @@ public class GuildData
     public bool TryCreateGuild(string guildName, string foundingPlayerUid)
     {
         // Guild exists with this name already.
-        if (!IsGuildNameAllowed(guildName)) return false;
+        if (!IsGuildNameAllowed(guildName))
+        {
+            if (isClient) NotificationSystem.AddNotification("Guild name taken.", GuiThemes.Red);
+            return false;
+        }
 
-        if (GetPlayersGuilds(foundingPlayerUid).Count > 10) return false; // Too many guilds.
+        if (GetPlayersGuilds(foundingPlayerUid).Count > GuildsConfig.Instance.maxGuildsPerPlayer)
+        {
+            if (isClient) NotificationSystem.AddNotification("You are in too many guilds.", GuiThemes.Red);
+            return false; // Too many guilds.
+        }
 
         Guild guild = new(foundingPlayerUid, guildName, nextGuildId);
         nextGuildId++;

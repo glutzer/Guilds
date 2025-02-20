@@ -44,9 +44,10 @@ public class WidgetSortableTable<T> : Widget
         float totalWeight = columns.Sum(c => c.widthWeight);
         float totalAdvance = 0;
 
-        SetChildSizing(ChildSizing.Height | ChildSizing.Once);
-
-        Widget topButtonContainer = new WidgetContainer(this).Percent(0, 0, 1, 1).FixedHeight(12).Alignment(Align.CenterTop);
+        Widget topButtonContainer = new WidgetContainer(this)
+            .PercentWidth(1)
+            .FixedHeight(12)
+            .Alignment(Align.CenterTop);
 
         for (int i = 0; i < columns.Length; i++)
         {
@@ -70,13 +71,16 @@ public class WidgetSortableTable<T> : Widget
             },
             $"{column.name}")
                 .Percent(totalAdvance, 0, ratio, 1)
-                .FixedHeight(12)
                 .Alignment(Align.LeftTop);
 
             totalAdvance += ratio;
         }
 
-        container = new WidgetContainer(topButtonContainer).Percent(0, 0, 1, 1).Alignment(Align.LeftBottom, AlignFlags.OutsideV).SetChildSizing(ChildSizing.Height | ChildSizing.Once);
+        container = new WidgetContainer(this)
+            .PercentWidth(1)
+            .FixedY(12)
+            .Alignment(Align.CenterTop)
+            .SetChildSizing(ChildSizing.Height | ChildSizing.Once);
 
         UpdateData();
     }
@@ -120,7 +124,6 @@ public class WidgetSortableTable<T> : Widget
             }
         }
 
-        container.SetBounds();
         gui?.MarkForRepartition();
     }
 }

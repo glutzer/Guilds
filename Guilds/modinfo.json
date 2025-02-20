@@ -7,7 +7,7 @@
     "nuts"
   ],
   "description": "",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "dependencies":
   {
     "marelib": "2.1.0",

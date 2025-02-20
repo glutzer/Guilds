@@ -328,7 +328,7 @@ public class ClaimManager : NetworkedGameSystem
             if (claimCount > 0 && GuildsConfig.Instance.onlyClaimAdjacents && !IsAdjacent(packet.position, reppedGuild.id)) return;
 
             Vector2d playerPos = new(player.Entity.Pos.X, player.Entity.Pos.Z);
-            Vector2d chunkPos = new(packet.position.X * 32 + 16, packet.position.Z * 32 + 16);
+            Vector2d chunkPos = new((packet.position.X * 32) + 16, (packet.position.Z * 32) + 16);
             if (Vector2d.Distance(playerPos, chunkPos) > GuildsConfig.Instance.claimRadius) return;
 
             claimData.AddClaim(packet.position, reppedGuild.id);
@@ -414,6 +414,23 @@ public class ClaimManager : NetworkedGameSystem
         }
 
         claimData ??= new ClaimData();
+
+        if (claimData.guildClaims.Count > 0)
+        {
+            claimData.guildClaimCount ??= new Dictionary<int, int>();
+
+            foreach (GuildClaim claim in claimData.guildClaims.Values)
+            {
+                if (claimData.guildClaimCount.TryGetValue(claim.guildId, out int count))
+                {
+                    claimData.guildClaimCount[claim.guildId] = count + 1;
+                }
+                else
+                {
+                    claimData.guildClaimCount[claim.guildId] = 1;
+                }
+            }
+        }
     }
 
     private void OnSave()

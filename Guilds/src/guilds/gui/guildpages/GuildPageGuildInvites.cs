@@ -41,6 +41,8 @@ public class GuildPageGuildInvites : GuildPageEntry
                 };
                 manager.SendPacket(packet);
             }, $"Deny").Alignment(Align.CenterTop).Fixed(32, index * 12, 64, 12);
+
+            index++;
         }
 
         if (guildInvites.Count == 0)

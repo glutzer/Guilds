@@ -55,6 +55,7 @@ public class GuildPageGuildMembers : GuildPageEntry
             }));
         }
 
+        // Guild members.
         Column<GuildMemberInfo> nameColumn = new("Name", 1f, (member) => member.Metrics.lastName, (a, b) => a.Metrics.lastName.CompareTo(b.Metrics.lastName));
         Column<GuildMemberInfo> onlineColumn = new("Online", 0.5f, (member) => member.Metrics.GetLastOnlineString(), (a, b) => b.Metrics.lastOnline.CompareTo(a.Metrics.lastOnline));
         Column<GuildMemberInfo> roleColumn = new("Role", 1f, (member) => member.Role.name, (a, b) => b.Role.authority.CompareTo(a.Role.authority));
@@ -66,13 +67,16 @@ public class GuildPageGuildMembers : GuildPageEntry
             .FixedSize(12, 8)
             .FixedPos((Gui.MouseX - field.X) / MainAPI.GuiScale, (Gui.MouseY - field.Y) / MainAPI.GuiScale);
             guildGui.MarkForRepartition();
-        }, nameColumn, onlineColumn, roleColumn).Alignment(Align.CenterTop).Percent(0, 0, 0.8f, 0.05f).FixedHeight(12);
+        }, nameColumn, onlineColumn, roleColumn)
+            .Alignment(Align.CenterTop)
+            .PercentWidth(0.8f)
+            .SetChildSizing(ChildSizing.Height | ChildSizing.Once);
 
+        // Guild invites.
         HashSet<string> invites = guild.GetInvites();
         if (invites.Count > 0)
         {
             Column<GuildMemberInfo> inviteColumn = new("Invited", 1f, (member) => member.Metrics.lastName, (a, b) => a.Metrics.lastName.CompareTo(b.Metrics.lastName));
-
             List<GuildMemberInfo> inviteMetrics = invites.Select(x => manager.guildData.GetMetrics(x)).Where(x => x != null).Select(x => new GuildMemberInfo(x!, default)).ToList();
 
             new WidgetSortableTable<GuildMemberInfo>(tableWidget, inviteMetrics, (member, field) =>
@@ -82,7 +86,9 @@ public class GuildPageGuildMembers : GuildPageEntry
                 .FixedSize(12, 8)
                 .FixedPos((Gui.MouseX - field.X) / MainAPI.GuiScale, (Gui.MouseY - field.Y) / MainAPI.GuiScale);
                 guildGui.MarkForRepartition();
-            }, inviteColumn, onlineColumn).Alignment(Align.CenterBottom, AlignFlags.OutsideV).Percent(0, 0, 1, 1).FixedHeight(12).FixedY(0);
+            }, inviteColumn, onlineColumn)
+                .Alignment(Align.CenterBottom, AlignFlags.OutsideV)
+                .PercentWidth(1);
         }
     }
 }

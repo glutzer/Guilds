@@ -65,5 +65,7 @@ public class WidgetGuildButton : WidgetBaseButton
 
         textObj.color = f;
         textObj.RenderCenteredLine(XCenter, YCenter, shader, true);
+
+        shader.Uniform("color", Vector4.One);
     }
 }

@@ -9,6 +9,10 @@ public static class GuiThemes
 {
     public static Font Font => FontRegistry.GetFont("friz");
 
+    public static Vector3 Red => new(1, 0, 0);
+    public static Vector3 Green => new(0, 1, 0);
+    public static Vector3 Blue => new(0, 0, 1);
+
     public static Vector4 ButtonColor => new(0.5f, 0, 0, 1);
     public static Vector4 TextColor => new(0.8f, 0.7f, 0.3f, 1);
     public static Vector4 DarkColor => new(0.1f, 0.1f, 0.1f, 1);

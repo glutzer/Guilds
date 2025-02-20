@@ -71,6 +71,8 @@ public class GuildManager : NetworkedGameSystem
         }
         else
         {
+            guildData.isClient = true;
+
             ScreenManager.hotkeyManager.RegisterHotKey("guild", "Guild Window", (int)GlKeys.V, triggerOnUpAlso: false);
             MainAPI.Capi.Input.SetHotKeyHandler("guild", key =>
             {
@@ -107,6 +109,7 @@ public class GuildManager : NetworkedGameSystem
         channel.SetMessageHandler<GuildData>(p =>
         {
             guildData = p;
+            p.isClient = true;
         });
 
         channel.SetMessageHandler<PlayerMetrics>(p =>
