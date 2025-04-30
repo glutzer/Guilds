@@ -18,6 +18,11 @@ public class NotificationPacket
         this.text = text;
         this.color = color;
     }
+
+    public NotificationPacket()
+    {
+
+    }
 }
 
 [GameSystem]

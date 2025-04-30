@@ -71,7 +71,6 @@ public class GuildPacket
 
     public T? ReadData<T>()
     {
-        if (data == null) return default;
-        return SerializerUtil.Deserialize<T>(data);
+        return data == null ? default : SerializerUtil.Deserialize<T>(data);
     }
 }

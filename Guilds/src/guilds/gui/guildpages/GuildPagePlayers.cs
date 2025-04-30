@@ -24,7 +24,7 @@ public class GuildPagePlayers : GuildPageEntry
             new WidgetGuildPlayerInfoPopup(field, member.uid)
             .Alignment(Align.LeftTop)
             .FixedSize(12, 8)
-            .FixedPos((Gui.MouseX - field.X) / MainAPI.GuiScale, (Gui.MouseY - field.Y) / MainAPI.GuiScale);
+            .FixedPos(Gui.MouseX - field.X, Gui.MouseY - field.Y);
             guildGui.MarkForRepartition();
         }, nameColumn, onlineColumn).Alignment(Align.CenterTop).Percent(0, 0, 0.8f, 0.05f).FixedHeight(12);
     }

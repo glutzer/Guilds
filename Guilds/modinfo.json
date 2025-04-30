@@ -7,10 +7,10 @@
     "nuts"
   ],
   "description": "",
-  "version": "1.3.3",
+  "version": "1.7.0",
   "dependencies":
   {
-    "marelib": "2.1.0",
+    "marelib": "2.6.0",
     "game": ""
   }
 }

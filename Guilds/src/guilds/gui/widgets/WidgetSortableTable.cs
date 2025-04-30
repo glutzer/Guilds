@@ -78,7 +78,7 @@ public class WidgetSortableTable<T> : Widget
 
         container = new WidgetContainer(this)
             .PercentWidth(1)
-            .FixedY(12)
+            .FixedY(Gui.Scaled(12))
             .Alignment(Align.CenterTop)
             .SetChildSizing(ChildSizing.Height | ChildSizing.Once);
 
@@ -111,7 +111,7 @@ public class WidgetSortableTable<T> : Widget
 
                 WidgetRightClickableField field = (WidgetRightClickableField)new WidgetRightClickableField(container, () => { }, column.getValue(datum))
                     .Percent(totalAdvance, 0, ratio, 1)
-                    .FixedY(i * 8) // Take height of sort button.
+                    .FixedY(Gui.Scaled(i * 8)) // Take height of sort button.
                     .FixedHeight(8)
                     .Alignment(Align.LeftTop);
 

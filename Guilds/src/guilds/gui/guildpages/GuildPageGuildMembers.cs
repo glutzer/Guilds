@@ -65,7 +65,7 @@ public class GuildPageGuildMembers : GuildPageEntry
             new WidgetGuildPlayerInfoPopup(field, member.Metrics.uid)
             .Alignment(Align.LeftTop)
             .FixedSize(12, 8)
-            .FixedPos((Gui.MouseX - field.X) / MainAPI.GuiScale, (Gui.MouseY - field.Y) / MainAPI.GuiScale);
+            .FixedPos(Gui.MouseX - field.X, Gui.MouseY - field.Y);
             guildGui.MarkForRepartition();
         }, nameColumn, onlineColumn, roleColumn)
             .Alignment(Align.CenterTop)
@@ -84,7 +84,7 @@ public class GuildPageGuildMembers : GuildPageEntry
                 new WidgetGuildPlayerInfoPopup(field, member.Metrics.uid)
                 .Alignment(Align.LeftTop)
                 .FixedSize(12, 8)
-                .FixedPos((Gui.MouseX - field.X) / MainAPI.GuiScale, (Gui.MouseY - field.Y) / MainAPI.GuiScale);
+                .FixedPos(Gui.MouseX - field.X, Gui.MouseY - field.Y);
                 guildGui.MarkForRepartition();
             }, inviteColumn, onlineColumn)
                 .Alignment(Align.CenterBottom, AlignFlags.OutsideV)

@@ -44,7 +44,7 @@ public class GuildPageGuildInfo : GuildPageEntry
                 };
 
                 MainAPI.GetGameSystem<GuildManager>(EnumAppSide.Client).SendPacket(packet);
-            }, "Disband Guild").Alignment(Align.CenterTop).Fixed(0, 196, 64, 16);
+            }, "Disband Guild").Alignment(Align.CenterTop).Fixed(0, Gui.Scaled(196), 64, 16);
         }
         else
         {
@@ -57,7 +57,7 @@ public class GuildPageGuildInfo : GuildPageEntry
                 };
 
                 MainAPI.GetGameSystem<GuildManager>(EnumAppSide.Client).SendPacket(packet);
-            }, "Leave Guild").Alignment(Align.CenterTop).Fixed(0, 256, 32, 12);
+            }, "Leave Guild").Alignment(Align.CenterTop).Fixed(0, Gui.Scaled(256), 32, 12);
         }
 
         WidgetToggleableButton repButton = new(parent, (on) =>
@@ -70,7 +70,7 @@ public class GuildPageGuildInfo : GuildPageEntry
 
             manager.SendPacket(packet);
         }, "Rep Guild", false);
-        repButton.Alignment(Align.CenterTop).Fixed(0, 12, 32, 12);
+        repButton.Alignment(Align.CenterTop).Fixed(0, Gui.Scaled(12), 32, 12);
 
         ClaimManager claimManager = MainAPI.GetGameSystem<ClaimManager>(EnumAppSide.Client);
         new WidgetTextLine(repButton, GuiThemes.Font, $"Claims: {claimManager.claimData.GetClaimCount(guild)}/{ClaimManager.GetMaxClaims(guild)}", GuiThemes.TextColor, true)
@@ -88,7 +88,7 @@ public class GuildPageGuildInfo : GuildPageEntry
             new WidgetColorPicker(parent, color =>
             {
                 packet.color = color;
-            }, guild.Color).Alignment(Align.CenterTop).Fixed(0, 32, 64, 64);
+            }, guild.Color).Alignment(Align.CenterTop).Fixed(0, Gui.Scaled(32), 64, 64);
 
             new WidgetGuildLabeledInput(parent, guild.name, "Guild Name", s =>
             {
@@ -96,13 +96,13 @@ public class GuildPageGuildInfo : GuildPageEntry
             }, s =>
             {
                 return s.Length is > 2 and < 33;
-            }).Alignment(Align.CenterTop).Fixed(0, 112, 64, 12);
+            }).Alignment(Align.CenterTop).Fixed(0, Gui.Scaled(112), 64, 12);
 
             new WidgetGuildButton(parent, () =>
             {
                 GuildPacket p = GuildPacket.Create(EnumGuildPacket.UpdateInfo, packet, null, guild.id, 0);
                 manager.SendPacket(p);
-            }, "Save").Alignment(Align.CenterTop).Fixed(0, 128, 32, 12);
+            }, "Save").Alignment(Align.CenterTop).Fixed(0, Gui.Scaled(128), 32, 12);
         }
 
         PlayerMetrics? metrics = manager.guildData.GetMetrics(ownUid);

@@ -29,6 +29,10 @@ public class GuildPageGuildRoles : GuildPageEntry
             return;
         }
 
-        new WidgetRoleContainer(parent, guildGui).Alignment(Align.CenterTop).FixedHeight(16).PercentWidth(1).SetChildSizing(ChildSizing.Height);
+        new WidgetRoleContainer(parent, guildGui)
+            .Alignment(Align.CenterTop)
+            .FixedHeight(16)
+            .PercentWidth(1)
+            .SetChildSizing(ChildSizing.Height);
     }
 }

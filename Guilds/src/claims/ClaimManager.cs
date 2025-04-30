@@ -205,14 +205,7 @@ public class ClaimData
             }
         }
 
-        if (guildClaimCount.TryGetValue(claim.guildId, out int count))
-        {
-            guildClaimCount[claim.guildId] = count + 1;
-        }
-        else
-        {
-            guildClaimCount[claim.guildId] = 1;
-        }
+        guildClaimCount[claim.guildId] = guildClaimCount.TryGetValue(claim.guildId, out int count) ? count + 1 : 1;
 
         guildClaims[position] = claim;
     }
@@ -302,10 +295,18 @@ public class ClaimManager : NetworkedGameSystem
     {
         PlayerMetrics metrics = guildManager.guildData.GetMetrics(player);
         Guild? reppedGuild = guildManager.guildData.GetGuild(metrics.reppedGuildId);
-        if (reppedGuild == null) return;
+        if (reppedGuild == null)
+        {
+            NotificationSystem.SendNotification("No guild repped.", player, GuiThemes.Red);
+            return;
+        }
 
         RoleInfo? role = reppedGuild.GetRole(player.PlayerUID);
-        if (role == null || !role.HasPermissions(GuildPerms.ManageClaims)) return;
+        if (role == null || !role.HasPermissions(GuildPerms.ManageClaims))
+        {
+            NotificationSystem.SendNotification("No claim permissions.", player, GuiThemes.Red);
+            return;
+        }
 
         packet.guildId = reppedGuild.id;
 
@@ -315,7 +316,11 @@ public class ClaimManager : NetworkedGameSystem
             {
                 if (claim.guildId != reppedGuild.id) return;
                 int claimCount = claimData.GetClaimCount(reppedGuild);
-                if (claimCount > 1 && GuildsConfig.Instance.onlyClaimAdjacents && !IsAdjacentToEmpty(packet.position, reppedGuild.id)) return;
+                if (claimCount > 1 && GuildsConfig.Instance.onlyClaimAdjacents && !IsAdjacentToEmpty(packet.position, reppedGuild.id))
+                {
+                    NotificationSystem.SendNotification("May only unclaim border tiles.", player, GuiThemes.Red);
+                    return;
+                }
                 claimData.RemoveClaim(packet.position);
                 BroadcastPacket(packet);
             }
@@ -324,12 +329,24 @@ public class ClaimManager : NetworkedGameSystem
         {
             int claimCount = claimData.GetClaimCount(reppedGuild);
             int maxClaims = GetMaxClaims(reppedGuild);
-            if (claimCount >= maxClaims) return;
-            if (claimCount > 0 && GuildsConfig.Instance.onlyClaimAdjacents && !IsAdjacent(packet.position, reppedGuild.id)) return;
+            if (claimCount >= maxClaims)
+            {
+                NotificationSystem.SendNotification("Max claims reached.", player, GuiThemes.Red);
+                return;
+            }
+            if (claimCount > 0 && GuildsConfig.Instance.onlyClaimAdjacents && !IsAdjacent(packet.position, reppedGuild.id))
+            {
+                NotificationSystem.SendNotification("May only claim adjacent tiles.", player, GuiThemes.Red);
+                return;
+            }
 
             Vector2d playerPos = new(player.Entity.Pos.X, player.Entity.Pos.Z);
             Vector2d chunkPos = new((packet.position.X * 32) + 16, (packet.position.Z * 32) + 16);
-            if (Vector2d.Distance(playerPos, chunkPos) > GuildsConfig.Instance.claimRadius) return;
+            if (Vector2d.Distance(playerPos, chunkPos) > GuildsConfig.Instance.claimRadius)
+            {
+                NotificationSystem.SendNotification($"Must be within {GuildsConfig.Instance.claimRadius} blocks to claim.", player, GuiThemes.Red);
+                return;
+            }
 
             claimData.AddClaim(packet.position, reppedGuild.id);
             BroadcastPacket(packet);
@@ -421,14 +438,7 @@ public class ClaimManager : NetworkedGameSystem
 
             foreach (GuildClaim claim in claimData.guildClaims.Values)
             {
-                if (claimData.guildClaimCount.TryGetValue(claim.guildId, out int count))
-                {
-                    claimData.guildClaimCount[claim.guildId] = count + 1;
-                }
-                else
-                {
-                    claimData.guildClaimCount[claim.guildId] = 1;
-                }
+                claimData.guildClaimCount[claim.guildId] = claimData.guildClaimCount.TryGetValue(claim.guildId, out int count) ? count + 1 : 1;
             }
         }
     }

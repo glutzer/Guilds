@@ -28,7 +28,10 @@ public class WidgetHoldDownGuildButton : Widget
         this.onClick = onClick;
         texture = GuiThemes.Button;
 
-        this.text = new TextObject(text, GuiThemes.Font, 50, fontColor);
+        this.text = new TextObject(text, GuiThemes.Font, 50, fontColor)
+        {
+            Shadow = true
+        };
 
         OnResize += () =>
         {
@@ -126,13 +129,6 @@ public class WidgetHoldDownGuildButton : Widget
     {
         if (state != EnumButtonState.Active) return;
 
-        if (IsInsideAndClip(obj))
-        {
-            state = EnumButtonState.Hovered;
-        }
-        else
-        {
-            state = EnumButtonState.Normal;
-        }
+        state = IsInsideAndClip(obj) ? EnumButtonState.Hovered : EnumButtonState.Normal;
     }
 }

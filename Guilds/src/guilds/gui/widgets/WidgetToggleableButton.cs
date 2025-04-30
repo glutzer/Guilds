@@ -16,7 +16,10 @@ public class WidgetToggleableButton : WidgetBaseToggleableButton
     public WidgetToggleableButton(Widget? parent, Action<bool> onClick, string text, bool lockedDown = true) : base(parent, onClick, !lockedDown)
     {
         texture = GuiThemes.Title;
-        textObj = new TextObject(text, GuiThemes.Font, 50, GuiThemes.TextColor);
+        textObj = new TextObject(text, GuiThemes.Font, 50, GuiThemes.TextColor)
+        {
+            Shadow = true
+        };
 
         OnResize += () =>
         {

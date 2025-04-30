@@ -30,7 +30,7 @@ public class GuildPageGuildInvites : GuildPageEntry
                     guildId = guild.id
                 };
                 manager.SendPacket(packet);
-            }, $"Join {guild.name}").Alignment(Align.CenterTop).Fixed(-32, index * 12, 64, 12);
+            }, $"Join {guild.name}").Alignment(Align.CenterTop).Fixed(Gui.Scaled(-32), Gui.Scaled(index * 12), 64, 12);
 
             new WidgetGuildButton(parent, () =>
             {
@@ -40,7 +40,7 @@ public class GuildPageGuildInvites : GuildPageEntry
                     guildId = guild.id
                 };
                 manager.SendPacket(packet);
-            }, $"Deny").Alignment(Align.CenterTop).Fixed(32, index * 12, 64, 12);
+            }, $"Deny").Alignment(Align.CenterTop).Fixed(Gui.Scaled(32), Gui.Scaled(index * 12), 64, 12);
 
             index++;
         }

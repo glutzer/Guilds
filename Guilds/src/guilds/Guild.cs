@@ -255,12 +255,7 @@ public class GuildData
 
         guild.RemoveInvite(invitedUid);
 
-        if (!invites.Remove(guild.id))
-        {
-            return false;
-        }
-
-        return AddPlayerToGuild(invitedUid, guild);
+        return invites.Remove(guild.id) && AddPlayerToGuild(invitedUid, guild);
     }
 
     public bool AddClientInvite(string playerUid, int guildId)
@@ -298,12 +293,7 @@ public class GuildData
 
     public Guild? GetGuild(int guildId)
     {
-        if (guilds.TryGetValue(guildId, out Guild? guild))
-        {
-            return guild;
-        }
-
-        return null;
+        return guilds.TryGetValue(guildId, out Guild? guild) ? guild : null;
     }
 
     public bool AddPlayerToGuild(string playerUid, Guild guild)
@@ -342,9 +332,7 @@ public class GuildData
     public bool IsGuildNameAllowed(string guildName)
     {
         if (guilds.Values.Any(g => g.name == guildName)) return false;
-        if (guildName.Length is < 3 or > 32) return false;
-
-        return true;
+        return guildName.Length is not < 3 and not > 32;
     }
 
     public bool TryCreateGuild(string guildName, string foundingPlayerUid)
@@ -375,6 +363,11 @@ public class GuildData
 
         GetPlayersGuilds(foundingPlayerUid).Add(guild.id);
 
+        if (!isClient)
+        {
+            NotificationSystem.BroadcastNotification($"Guild {guildName} founded.");
+        }
+
         return true;
     }
 
@@ -391,6 +384,11 @@ public class GuildData
         }
 
         guilds.Remove(guild.id);
+
+        if (!isClient)
+        {
+            NotificationSystem.BroadcastNotification($"Guild {guild.name} disbanded.");
+        }
 
         return true;
     }
@@ -431,9 +429,7 @@ public class GuildData
         if (!role.HasPermissions(GuildPerms.ManageRoles)) return false;
 
         RoleInfo? targetRole = guild.GetRole(roleId);
-        if (targetRole == null || targetRole.authority >= role.authority) return false;
-
-        return guild.RemoveRole(roleId);
+        return targetRole != null && targetRole.authority < role.authority && guild.RemoveRole(roleId);
     }
 
     public bool TryUpdateRole(string playerUid, RoleUpdateInfo packet, int guildId, int roleId)
@@ -496,14 +492,7 @@ public class GuildData
     {
         if (!playerMetrics.TryGetValue(player.PlayerUID, out PlayerMetrics? metrics))
         {
-            if (player is IClientPlayer clientPlayer)
-            {
-                metrics = new PlayerMetrics(clientPlayer);
-            }
-            else
-            {
-                metrics = new PlayerMetrics((IServerPlayer)player);
-            }
+            metrics = player is IClientPlayer clientPlayer ? new PlayerMetrics(clientPlayer) : new PlayerMetrics((IServerPlayer)player);
 
             playerMetrics[player.PlayerUID] = metrics;
         }
@@ -516,8 +505,7 @@ public class GuildData
     /// </summary>
     public PlayerMetrics? GetMetrics(string playerUid)
     {
-        if (!playerMetrics.TryGetValue(playerUid, out PlayerMetrics? metrics)) return null;
-        return metrics;
+        return !playerMetrics.TryGetValue(playerUid, out PlayerMetrics? metrics) ? null : metrics;
     }
 
     #endregion
@@ -613,13 +601,9 @@ public class PlayerMetrics
         {
             return $"{timeSinceLastOnline / 60}m ago";
         }
-        else if (timeSinceLastOnline < 86400)
-        {
-            return $"{timeSinceLastOnline / 3600}h ago";
-        }
         else
         {
-            return $"{timeSinceLastOnline / 86400}d ago";
+            return timeSinceLastOnline < 86400 ? $"{timeSinceLastOnline / 3600}h ago" : $"{timeSinceLastOnline / 86400}d ago";
         }
     }
 
@@ -689,15 +673,13 @@ public class Guild
         roles ??= InitializeRoles();
 
         if (!members.TryGetValue(playerUid, out MembershipInfo? memberInfo)) return null;
-        if (memberInfo.roleId >= roles.Length) return null;
-        return roles[memberInfo.roleId];
+        return memberInfo.roleId >= roles.Length ? null : roles[memberInfo.roleId];
     }
 
     public RoleInfo? GetRole(int roleId)
     {
         roles ??= InitializeRoles();
-        if (roleId >= roles.Length) return null;
-        return roles[roleId];
+        return roleId >= roles.Length ? null : roles[roleId];
     }
 
     public bool HasMember(string playerUid)

@@ -23,7 +23,10 @@ public class WidgetGuildTab : WidgetBaseToggleableButton
         tab = GuiThemes.Tab;
         this.flip = flip;
         this.color = color;
-        textObj = new TextObject(tabName, GuiThemes.Font, 50, GuiThemes.TextColor);
+        textObj = new TextObject(tabName, GuiThemes.Font, 50, GuiThemes.TextColor)
+        {
+            Shadow = true
+        };
 
         OnResize += () =>
         {

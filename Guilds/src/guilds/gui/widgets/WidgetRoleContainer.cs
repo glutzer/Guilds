@@ -28,36 +28,6 @@ public class WidgetRoleContainer : Widget
             .Alignment(Align.LeftTop)
             .Percent(0, 0, 0.5f, 1f);
     }
-
-    //public void OnUpdate(EnumClientGuildUpdate type, object? obj)
-    //{
-    //    if (type.HasFlag(EnumClientGuildUpdate.GuildRolesChanged))
-    //    {
-    //        List<Widget> selector = children.Where(t => t is RoleSelector).ToList();
-
-    //        if (selector.Count == 0) return;
-    //        foreach (Widget select in selector)
-    //        {
-    //            select.RemoveSelf();
-    //        }
-
-    //        RoleInfo? ownRole = guild?.GetRole(guildGui.ownUid);
-    //        if (ownRole == null || guild == null) return;
-
-    //        if (!ownRole.HasPermissions(GuildPerms.ManageRoles))
-    //        {
-    //            new WidgetTextLine(this, FontRegistry.GetFont("friz"), "No role permissions.", Vector4.One, true).Alignment(Align.Center).FixedSize(64, 32);
-    //            return;
-    //        }
-
-    //        new RoleSelector(this, guild, ownRole)
-    //        .Alignment(Align.LeftTop)
-    //        .Percent(0, 0, 0.5f, 1f);
-
-    //        SetBounds();
-    //        guildGui.MarkForRepartition();
-    //    }
-    //}
 }
 
 /// <summary>
@@ -89,7 +59,7 @@ public class RoleSelector : Widget
             };
 
             manager.SendPacket(packet);
-        }, "Add Role").Alignment(Align.CenterTop).Fixed(-16, 0, 32, 12);
+        }, "Add Role").Alignment(Align.CenterTop).Fixed(Gui.Scaled(-16), 0, 32, 12);
 
         new WidgetGuildButton(this, () =>
         {
@@ -101,7 +71,7 @@ public class RoleSelector : Widget
             };
 
             manager.SendPacket(packet);
-        }, "Remove Role").Alignment(Align.CenterTop).Fixed(16, 0, 32, 12);
+        }, "Remove Role").Alignment(Align.CenterTop).Fixed(Gui.Scaled(16), 0, 32, 12);
 
         for (int i = 0; i < roleSelectionButtons.Length; i++)
         {
@@ -114,7 +84,7 @@ public class RoleSelector : Widget
                 roleSelectionButtons[selectedRoleIndex].Release();
                 selectedRoleIndex = indexOfThis;
                 UpdatePermissions(role, guild.id);
-            }, role.name).Alignment(Align.CenterTop).Fixed(0, (i * 12) + 24, 64, 12);
+            }, role.name).Alignment(Align.CenterTop).Fixed(0, Gui.Scaled((i * 12) + 24), 64, 12);
 
             // Button will never be able to be selected or let up now.
             if (role.authority >= ownRole.authority) roleSelectionButtons[i].LockDown();
@@ -169,7 +139,7 @@ public class PermissionSelector : Widget
 
         new WidgetGuildLabeledInput(this, roleData.newName, "Name: ", (s) => roleData.newName = s, (s) => s.Length < 50)
             .Alignment(Align.CenterTop)
-            .Fixed(0, index * 8, 64, 8);
+            .Fixed(0, Gui.Scaled(index * 8), 64, 8);
 
         index++;
 
@@ -188,7 +158,7 @@ public class PermissionSelector : Widget
                 }
             }, enumType.ToString(), false)
                 .Alignment(Align.CenterTop)
-                .Fixed(0, index * 8, 64, 8);
+                .Fixed(0, Gui.Scaled(index * 8), 64, 8);
 
             if (roleData.guildPerms.HasFlag(enumType)) button.LockDown();
 
@@ -197,7 +167,7 @@ public class PermissionSelector : Widget
 
         new WidgetGuildLabeledInput(this, roleData.authority.ToString(), "Authority: ", (s) => roleData.authority = int.Parse(s), (s) => int.TryParse(s, out _))
             .Alignment(Align.CenterTop)
-            .Fixed(0, index * 8, 64, 8);
+            .Fixed(0, Gui.Scaled(index * 8), 64, 8);
 
         index++;
 
@@ -210,11 +180,11 @@ public class PermissionSelector : Widget
                 newAuthority = roleData.authority
             };
 
-            GuildPacket guildPacket = GuildPacket.Create<RoleUpdateInfo>(EnumGuildPacket.UpdateRole, packet, null, roleData.guildId, roleData.roleId);
+            GuildPacket guildPacket = GuildPacket.Create(EnumGuildPacket.UpdateRole, packet, null, roleData.guildId, roleData.roleId);
 
             MainAPI.GetGameSystem<GuildManager>(EnumAppSide.Client).SendPacket(guildPacket);
         }, "Apply Roles")
             .Alignment(Align.CenterTop)
-            .Fixed(0, (index * 8) + 12, 64, 12);
+            .Fixed(0, Gui.Scaled((index * 8) + 12), 64, 12);
     }
 }

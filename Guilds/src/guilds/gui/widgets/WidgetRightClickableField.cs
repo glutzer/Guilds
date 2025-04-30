@@ -16,7 +16,10 @@ public class WidgetRightClickableField : WidgetBaseButton
 
     public WidgetRightClickableField(Widget? parent, Action onClick, string text) : base(parent, onClick)
     {
-        this.text = new TextObject(text, GuiThemes.Font, 50, GuiThemes.TextColor);
+        this.text = new TextObject(text, GuiThemes.Font, 50, GuiThemes.TextColor)
+        {
+            Shadow = true
+        };
 
         OnResize += () =>
         {

@@ -101,7 +101,7 @@ public class GuildGui : Gui
                 foreach (WidgetGuildTab tab in tabs) tab.Release();
                 SwapToPage(i);
             }, true, new Vector4(0.5f, 0, 0, 1), entry.name)
-                .Fixed(0, index * 12, 50, 12)
+                .Fixed(0, Scaled(index * 12), 50, 12)
                 .Alignment(Align.LeftTop, AlignFlags.OutsideH)
                 .As(out WidgetGuildTab guildTab);
             index++;
@@ -153,7 +153,7 @@ public class GuildGui : Gui
                 }
 
                 RefreshPage();
-            }, false, new Vector4(guild.Color, 1), guild.name, true).Fixed(8, index * 12, 50, 12).Alignment(Align.RightTop, AlignFlags.OutsideH);
+            }, false, new Vector4(guild.Color, 1), guild.name, true).Fixed(Scaled(8), Scaled(index * 12), 50, 12).Alignment(Align.RightTop, AlignFlags.OutsideH);
             index++;
             guildTabs.Add(newTab);
 

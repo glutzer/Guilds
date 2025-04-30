@@ -20,7 +20,10 @@ public class WidgetGuildButton : WidgetBaseButton
         color = GuiThemes.ButtonColor;
         fontColor = GuiThemes.TextColor;
 
-        textObj = new TextObject(text, GuiThemes.Font, 50, fontColor);
+        textObj = new TextObject(text, GuiThemes.Font, 50, fontColor)
+        {
+            Shadow = true
+        };
 
         // Fit text object into the button.
         OnResize += () =>

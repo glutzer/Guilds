@@ -17,7 +17,10 @@ public class WidgetFadingText : Widget
     public WidgetFadingText(Widget? parent, string label, int fontScale, bool left, Vector3 notificationColor) : base(parent)
     {
         texture = GuiThemes.Blank;
-        text = new TextObject(label, GuiThemes.Font, fontScale, new Vector4(notificationColor, 1f));
+        text = new TextObject(label, GuiThemes.Font, fontScale, new Vector4(notificationColor, 1f))
+        {
+            Shadow = true
+        };
 
         NoScaling();
 
