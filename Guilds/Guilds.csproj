@@ -8,8 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Reference Include="MareLib">
-      <HintPath>..\..\MareLib\MareLib\bin\Release\Mods\mod\MareLib.dll</HintPath>
+    <Reference Include="NutsLib">
+      <HintPath>..\..\NutsLib\NutsLib\bin\Release\Mods\mod\NutsLib.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="OpenTK.Graphics">

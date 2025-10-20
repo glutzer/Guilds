@@ -1,4 +1,4 @@
-﻿using MareLib;
+﻿using NutsLib;
 using OpenTK.Mathematics;
 using System;
 
@@ -42,7 +42,7 @@ public class WidgetGuildTab : WidgetBaseToggleableButton
         accum = 1;
     }
 
-    public override void OnRender(float dt, MareShader shader)
+    public override void OnRender(float dt, NuttyShader shader)
     {
         Vector4 f = Vector4.One;
 

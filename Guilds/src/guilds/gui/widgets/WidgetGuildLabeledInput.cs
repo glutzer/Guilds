@@ -1,4 +1,4 @@
-﻿using MareLib;
+﻿using NutsLib;
 using OpenTK.Mathematics;
 using System;
 
@@ -44,7 +44,7 @@ public class WidgetGuildLabeledInput : Widget
         onNewText(newText);
     }
 
-    public override void OnRender(float dt, MareShader shader)
+    public override void OnRender(float dt, NuttyShader shader)
     {
         shader.Uniform("color", new Vector4(0.1f, 0.1f, 0.1f, 1));
         RenderTools.RenderNineSlice(texture, shader, X, Y, Width, Height);

@@ -1,4 +1,4 @@
-﻿using MareLib;
+﻿using NutsLib;
 using OpenTK.Mathematics;
 using System;
 
@@ -13,7 +13,7 @@ public class WidgetToggleableButton : WidgetBaseToggleableButton
     private readonly TextObject textObj;
     private Vector4 color;
 
-    public WidgetToggleableButton(Widget? parent, Action<bool> onClick, string text, Vector4 color, bool lockedDown = true) : base(parent, onClick, !lockedDown)
+    public WidgetToggleableButton(Widget? parent, Gui gui, Action<bool> onClick, string text, Vector4 color, bool lockedDown = true) : base(parent, gui, onClick, !lockedDown)
     {
         texture = GuiThemes.Title;
         textObj = new TextObject(text, FontRegistry.GetFont("friz"), 50, Vector4.One);
@@ -39,7 +39,7 @@ public class WidgetToggleableButton : WidgetBaseToggleableButton
         state = EnumButtonState.Active;
     }
 
-    public override void OnRender(float dt, MareShader shader)
+    public override void OnRender(float dt, NuttyShader shader)
     {
         Vector4 c = color;
         Vector4 f = Vector4.One;
