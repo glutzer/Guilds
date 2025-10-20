@@ -29,7 +29,7 @@ public class WidgetGuildPlayerInfoPopup : Widget
                 {
                     new WidgetGuildButton(this, () =>
                     {
-                        RemoveSelf();
+                        DeleteSelf();
                     }, $"Kick From {guild.name}", new Vector4(0.3f, 0, 0, 1), Vector4.One).Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
                 }
 
@@ -37,7 +37,7 @@ public class WidgetGuildPlayerInfoPopup : Widget
                 {
                     new WidgetGuildButton(this, () =>
                     {
-                        RemoveSelf();
+                        DeleteSelf();
                     }, "Set Role", new Vector4(0.3f, 0, 0, 1), Vector4.One).Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
                 }
             }
@@ -56,7 +56,7 @@ public class WidgetGuildPlayerInfoPopup : Widget
                         };
 
                         manager.SendPacket(packet);
-                        RemoveSelf();
+                        DeleteSelf();
                     }, $"Cancel {guild.name} Invite", new Vector4(0.3f, 0, 0, 1), Vector4.One).Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
                 }
                 else
@@ -71,7 +71,7 @@ public class WidgetGuildPlayerInfoPopup : Widget
                         };
 
                         manager.SendPacket(packet);
-                        RemoveSelf();
+                        DeleteSelf();
                     }, $"Invite To {guild.name}", new Vector4(0.3f, 0, 0, 1), Vector4.One).Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
                 }
             }
@@ -87,7 +87,7 @@ public class WidgetGuildPlayerInfoPopup : Widget
     {
         if (!IsInAllBounds(obj))
         {
-            RemoveSelf();
+            DeleteSelf();
         }
     }
 }
