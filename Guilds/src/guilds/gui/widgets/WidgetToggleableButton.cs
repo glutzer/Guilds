@@ -1,4 +1,4 @@
-﻿using MareLib;
+﻿using NutsLib;
 using OpenTK.Mathematics;
 using System;
 
@@ -39,7 +39,7 @@ public class WidgetToggleableButton : WidgetBaseToggleableButton
         state = EnumButtonState.Active;
     }
 
-    public override void OnRender(float dt, MareShader shader)
+    public override void OnRender(float dt, NuttyShader shader)
     {
         Vector4 c = color;
         Vector4 f = Vector4.One;

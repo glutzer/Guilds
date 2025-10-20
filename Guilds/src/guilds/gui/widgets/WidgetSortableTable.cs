@@ -1,4 +1,4 @@
-﻿using MareLib;
+﻿using NutsLib;
 using OpenTK.Mathematics;
 using System;
 using System.Collections.Generic;
@@ -88,7 +88,7 @@ public class WidgetSortableTable<T> : Widget
 
     public void UpdateData()
     {
-        container.ClearChildren();
+        container.DeleteChildren();
 
         for (int i = 0; i < data.Count; i++)
         {
@@ -120,7 +120,7 @@ public class WidgetSortableTable<T> : Widget
             }
         }
 
-        container.SetBounds();
+        container.CalculateBounds();
         gui?.MarkForRepartition();
     }
 }

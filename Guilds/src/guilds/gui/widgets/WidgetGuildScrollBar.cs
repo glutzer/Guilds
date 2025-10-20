@@ -1,4 +1,4 @@
-﻿using MareLib;
+﻿using NutsLib;
 using OpenTK.Mathematics;
 
 namespace Guilds;
@@ -16,7 +16,7 @@ public class WidgetGuildScrollBar : WidgetBaseScrollBar
         this.color = color;
     }
 
-    protected override void RenderBackground(int x, int y, int width, int height, MareShader shader)
+    protected override void RenderBackground(int x, int y, int width, int height, NuttyShader shader)
     {
         Vector4 c = color;
         c.Xyz *= 0.5f;
@@ -25,7 +25,7 @@ public class WidgetGuildScrollBar : WidgetBaseScrollBar
         shader.Uniform("color", Vector4.One);
     }
 
-    protected override void RenderCursor(int x, int y, int width, int height, MareShader shader, EnumButtonState barState)
+    protected override void RenderCursor(int x, int y, int width, int height, NuttyShader shader, EnumButtonState barState)
     {
         shader.Uniform("color", color);
         RenderTools.RenderNineSlice(cursorTex, shader, x, y, width, height);

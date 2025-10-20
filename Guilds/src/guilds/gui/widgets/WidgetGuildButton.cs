@@ -1,4 +1,4 @@
-﻿using MareLib;
+﻿using NutsLib;
 using OpenTK.Mathematics;
 using System;
 
@@ -37,7 +37,7 @@ public class WidgetGuildButton : WidgetBaseButton
         texture = GuiThemes.Button;
     }
 
-    public override void OnRender(float dt, MareShader shader)
+    public override void OnRender(float dt, NuttyShader shader)
     {
         Vector4 c = color;
         Vector4 f = fontColor;

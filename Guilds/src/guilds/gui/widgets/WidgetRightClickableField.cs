@@ -1,4 +1,4 @@
-﻿using MareLib;
+﻿using NutsLib;
 using OpenTK.Mathematics;
 using System;
 using Vintagestory.API.Client;
@@ -30,7 +30,7 @@ public class WidgetRightClickableField : WidgetBaseButton
         base.GuiEvents_MouseDown(obj);
     }
 
-    public override void OnRender(float dt, MareShader shader)
+    public override void OnRender(float dt, NuttyShader shader)
     {
         if (!RenderTools.IsPointInsideScissor(X, Y)) return;
 
