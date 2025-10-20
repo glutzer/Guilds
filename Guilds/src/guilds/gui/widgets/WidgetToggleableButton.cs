@@ -13,7 +13,7 @@ public class WidgetToggleableButton : WidgetBaseToggleableButton
     private readonly TextObject textObj;
     private Vector4 color;
 
-    public WidgetToggleableButton(Widget? parent, Gui gui, Action<bool> onClick, string text, Vector4 color, bool lockedDown = true) : base(parent, gui, onClick, !lockedDown)
+    public WidgetToggleableButton(Widget? parent, Action<bool> onClick, string text, Vector4 color, bool lockedDown = true) : base(parent, onClick, !lockedDown)
     {
         texture = GuiThemes.Title;
         textObj = new TextObject(text, FontRegistry.GetFont("friz"), 50, Vector4.One);
