@@ -264,7 +264,7 @@ public class ClaimManager : NetworkedGameSystem
         {
             api.ModLoader.GetModSystem<WorldMapManager>().RegisterMapLayer<GuildClaimMapLayer>("guildclaims", 0.8f);
 
-            MareShaderRegistry.AddShader("guilds:claimgui", "guilds:claimgui", "claimgui");
+            NuttyShaderRegistry.AddShader("guilds:claimgui", "guilds:claimgui", "claimgui");
         }
     }
 

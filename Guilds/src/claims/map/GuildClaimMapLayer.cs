@@ -132,16 +132,16 @@ public class GuildClaimMapLayer : MapLayer
         }
     }
 
-    public override void OnViewChangedClient(List<Vec2i> nowVisible, List<Vec2i> nowHidden)
+    public override void OnViewChangedClient(List<FastVec2i> nowVisible, List<FastVec2i> nowHidden)
     {
-        foreach (Vec2i pos in nowVisible)
+        foreach (FastVec2i pos in nowVisible)
         {
             if (claimManager.claimData.TryGetClaim(new GridPos2d(pos.X, pos.Y), out GuildClaim claim))
             {
                 OnTileAdded(claim);
             }
         }
-        foreach (Vec2i pos in nowHidden)
+        foreach (FastVec2i pos in nowHidden)
         {
             OnTileRemoved(new GridPos2d(pos.X, pos.Y));
         }
@@ -159,7 +159,7 @@ public class GuildClaimMapLayer : MapLayer
 
         ShaderProgramBase? currentShader = ShaderProgramBase.CurrentShaderProgram;
 
-        MareShader guiShader = MareShaderRegistry.Get("claimgui");
+        NuttyShader guiShader = NuttyShaderRegistry.Get("claimgui");
         guiShader.Use();
         guiShader.BindTexture(blank, "tex2d");
 
