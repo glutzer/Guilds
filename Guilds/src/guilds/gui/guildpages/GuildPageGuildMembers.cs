@@ -1,5 +1,4 @@
-﻿using MareLib;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 namespace Guilds;
@@ -26,9 +25,9 @@ public class GuildPageGuildMembers : GuildPageEntry
 
         if (selectedGuildId == -1)
         {
-            new WidgetTextLine(parent, GuiThemes.Font, "No guild selected.", GuiThemes.TextColor)
+            new WidgetTextLine(parent, parent.Gui, VanillaThemes.Font, "No guild selected.", VanillaThemes.WhitishTextColor)
                 .Alignment(Align.Center)
-                .PercentWidth(1)
+                .PercentWidth(1f)
                 .FixedHeight(12);
 
             return;
@@ -39,7 +38,7 @@ public class GuildPageGuildMembers : GuildPageEntry
 
         if (!guild.HasMember(ownUid)) return; // Not in guild.
 
-        List<GuildMemberInfo> info = new();
+        List<GuildMemberInfo> info = [];
         foreach (MembershipInfo memberInfo in guild.MemberInfo)
         {
             PlayerMetrics? metrics = manager.guildData.GetMetrics(memberInfo.playerUid ?? "");
@@ -60,9 +59,9 @@ public class GuildPageGuildMembers : GuildPageEntry
         Column<GuildMemberInfo> onlineColumn = new("Online", 0.5f, (member) => member.Metrics.GetLastOnlineString(), (a, b) => b.Metrics.lastOnline.CompareTo(a.Metrics.lastOnline));
         Column<GuildMemberInfo> roleColumn = new("Role", 1f, (member) => member.Role.name, (a, b) => b.Role.authority.CompareTo(a.Role.authority));
 
-        Widget tableWidget = new WidgetSortableTable<GuildMemberInfo>(parent, info, (member, field) =>
+        Widget tableWidget = new WidgetSortableTable<GuildMemberInfo>(parent, parent.Gui, info, (member, field) =>
         {
-            new WidgetGuildPlayerInfoPopup(field, member.Metrics.uid)
+            new WidgetGuildPlayerInfoPopup(field, parent.Gui, member.Metrics.uid)
             .Alignment(Align.LeftTop)
             .FixedSize(12, 8)
             .FixedPos(Gui.MouseX - field.X, Gui.MouseY - field.Y);
@@ -79,16 +78,16 @@ public class GuildPageGuildMembers : GuildPageEntry
             Column<GuildMemberInfo> inviteColumn = new("Invited", 1f, (member) => member.Metrics.lastName, (a, b) => a.Metrics.lastName.CompareTo(b.Metrics.lastName));
             List<GuildMemberInfo> inviteMetrics = invites.Select(x => manager.guildData.GetMetrics(x)).Where(x => x != null).Select(x => new GuildMemberInfo(x!, default)).ToList();
 
-            new WidgetSortableTable<GuildMemberInfo>(tableWidget, inviteMetrics, (member, field) =>
+            new WidgetSortableTable<GuildMemberInfo>(tableWidget, parent.Gui, inviteMetrics, (member, field) =>
             {
-                new WidgetGuildPlayerInfoPopup(field, member.Metrics.uid)
+                new WidgetGuildPlayerInfoPopup(field, parent.Gui, member.Metrics.uid)
                 .Alignment(Align.LeftTop)
                 .FixedSize(12, 8)
                 .FixedPos(Gui.MouseX - field.X, Gui.MouseY - field.Y);
                 guildGui.MarkForRepartition();
             }, inviteColumn, onlineColumn)
                 .Alignment(Align.CenterBottom, AlignFlags.OutsideV)
-                .PercentWidth(1);
+                .PercentWidth(1f);
         }
     }
 }

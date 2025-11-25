@@ -1,8 +1,4 @@
-﻿using MareLib;
-using OpenTK.Mathematics;
-using System;
-
-namespace Guilds;
+﻿namespace Guilds;
 
 public class WidgetGuildLabeledInput : Widget
 {
@@ -13,20 +9,20 @@ public class WidgetGuildLabeledInput : Widget
     public Action<string> onNewText;
     public Func<string, bool> isTextValid;
 
-    public WidgetGuildLabeledInput(Widget? parent, string defaultText, string label, Action<string> onNewText, Func<string, bool> isTextValid) : base(parent)
+    public WidgetGuildLabeledInput(Widget? parent, Gui gui, string defaultText, string label, Action<string> onNewText, Func<string, bool> isTextValid) : base(parent, gui)
     {
-        texture = GuiThemes.Background;
+        texture = VanillaThemes.OutsetTexture;
 
         this.onNewText = onNewText;
         this.isTextValid = isTextValid;
 
-        textBox = (WidgetTextBoxSingle)new WidgetTextBoxSingle(this, GuiThemes.Font, GuiThemes.TextColor, false, true, OnNewText, defaultText)
+        textBox = (WidgetTextBoxSingle)new WidgetVanillaTextInputBox(this, gui, false, true, onNewText, defaultText, label)
             .Alignment(Align.LeftTop)
             .Percent(0.5f, 0, 0.5f, 1);
 
-        new WidgetTextLine(this, GuiThemes.Font, label, GuiThemes.TextColor, true)
+        new WidgetTextLine(this, gui, VanillaThemes.Font, label, VanillaThemes.WhitishTextColor, true)
             .Alignment(Align.LeftTop)
-            .Percent(0, 0, 0.5f, 1);
+            .Percent(0f, 0f, 0.5f, 1f);
 
         lastText = defaultText;
     }
@@ -42,12 +38,5 @@ public class WidgetGuildLabeledInput : Widget
         lastText = newText;
 
         onNewText(newText);
-    }
-
-    public override void OnRender(float dt, MareShader shader)
-    {
-        shader.Uniform("color", new Vector4(0.1f, 0.1f, 0.1f, 1));
-        RenderTools.RenderNineSlice(texture, shader, X, Y, Width, Height);
-        shader.Uniform("color", Vector4.One);
     }
 }

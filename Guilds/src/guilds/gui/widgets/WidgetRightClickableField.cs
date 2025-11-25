@@ -1,6 +1,4 @@
-﻿using MareLib;
-using OpenTK.Mathematics;
-using System;
+﻿using OpenTK.Mathematics;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 
@@ -11,12 +9,12 @@ namespace Guilds;
 /// </summary>
 public class WidgetRightClickableField : WidgetBaseButton
 {
-    private readonly NineSliceTexture tex = GuiThemes.Title;
+    private readonly NineSliceTexture tex = VanillaThemes.OutsetTexture;
     private readonly TextObject text;
 
-    public WidgetRightClickableField(Widget? parent, Action onClick, string text) : base(parent, onClick)
+    public WidgetRightClickableField(Widget? parent, Gui gui, Action onClick, string text) : base(parent, gui, onClick)
     {
-        this.text = new TextObject(text, GuiThemes.Font, 50, GuiThemes.TextColor)
+        this.text = new TextObject(text, VanillaThemes.Font, 50, VanillaThemes.WhitishTextColor)
         {
             Shadow = true
         };
@@ -33,11 +31,11 @@ public class WidgetRightClickableField : WidgetBaseButton
         base.GuiEvents_MouseDown(obj);
     }
 
-    public override void OnRender(float dt, MareShader shader)
+    public override void OnRender(float dt, ShaderGui shader)
     {
         if (!RenderTools.IsPointInsideScissor(X, Y)) return;
 
-        shader.Uniform("color", state != EnumButtonState.Normal ? new Vector4(0.15f, 0.15f, 0.15f, 1) : new Vector4(0.1f, 0.1f, 0.1f, 1));
+        shader.Uniform("color", state != EnumButtonState.Normal ? new Vector4(0.15f, 0.15f, 0.15f, 1f) : new Vector4(0.1f, 0.1f, 0.1f, 1f));
         RenderTools.RenderNineSlice(tex, shader, X, Y, Width, Height);
         shader.Uniform("color", Vector4.One);
 

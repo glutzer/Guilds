@@ -2,15 +2,13 @@
   "type": "code",
   "modid": "guilds",
   "name": "Guilds",
-  "authors":
-  [
+  "authors": [
     "nuts"
   ],
-  "description": "",
-  "version": "1.7.0",
-  "dependencies":
-  {
-    "marelib": "2.6.0",
+  "description": "map game",
+  "version": "2.0.0",
+  "dependencies": {
+    "nutslib": "3.0.1",
     "game": ""
   }
 }

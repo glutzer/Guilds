@@ -1,5 +1,4 @@
-﻿using MareLib;
-using OpenTK.Mathematics;
+﻿using OpenTK.Mathematics;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -53,7 +52,7 @@ public class GuildClaimMapLayer : MapLayer
 
     private GridPos2d mousedPos;
 
-    private readonly Dictionary<GridPos2d, RenderableTile> tiles = new();
+    private readonly Dictionary<GridPos2d, RenderableTile> tiles = [];
 
     /// <summary>
     /// Update all tiles within bounds.
@@ -132,16 +131,17 @@ public class GuildClaimMapLayer : MapLayer
         }
     }
 
-    public override void OnViewChangedClient(List<Vec2i> nowVisible, List<Vec2i> nowHidden)
+    public override void OnViewChangedClient(List<FastVec2i> nowVisible, List<FastVec2i> nowHidden)
     {
-        foreach (Vec2i pos in nowVisible)
+        foreach (FastVec2i pos in nowVisible)
         {
             if (claimManager.claimData.TryGetClaim(new GridPos2d(pos.X, pos.Y), out GuildClaim claim))
             {
                 OnTileAdded(claim);
             }
         }
-        foreach (Vec2i pos in nowHidden)
+
+        foreach (FastVec2i pos in nowHidden)
         {
             OnTileRemoved(new GridPos2d(pos.X, pos.Y));
         }
@@ -159,7 +159,7 @@ public class GuildClaimMapLayer : MapLayer
 
         ShaderProgramBase? currentShader = ShaderProgramBase.CurrentShaderProgram;
 
-        MareShader guiShader = MareShaderRegistry.Get("claimgui");
+        NuttyShader guiShader = NuttyShaderRegistry.Get("claimgui");
         guiShader.Use();
         guiShader.BindTexture(blank, "tex2d");
 
@@ -174,7 +174,7 @@ public class GuildClaimMapLayer : MapLayer
 
             guiShader.Uniform("sideMask", (int)claim.borderFlags);
             guiShader.Uniform("color", new Vector4(claim.color, 0.5f));
-            RenderTools.RenderQuad(guiShader, screenPos.X, screenPos.Y, 32 * mapElem.ZoomLevel, 32 * mapElem.ZoomLevel);
+            RenderTools.RenderQuad(guiShader, screenPos.X, screenPos.Y, 32f * mapElem.ZoomLevel, 32f * mapElem.ZoomLevel);
         }
 
         guiShader.Uniform("sideMask", 0);
@@ -183,10 +183,10 @@ public class GuildClaimMapLayer : MapLayer
         {
             Vector2 mPos = TranslateChunkPosToViewPos(mousedPos, mapElem);
 
-            if (32 * mapElem.ZoomLevel > 24)
+            if (32f * mapElem.ZoomLevel > 24f)
             {
                 guiShader.Uniform("color", MainAPI.Capi.World.Player.Entity.Controls.ShiftKey ? new Vector4(0.9f, 0.4f, 0.4f, 0.6f) : new Vector4(0.4f, 0.9f, 0.4f, 0.6f));
-                RenderTools.RenderNineSlice(GuiThemes.Button, guiShader, mPos.X, mPos.Y, 32 * mapElem.ZoomLevel, 32 * mapElem.ZoomLevel);
+                RenderTools.RenderNineSlice(VanillaThemes.OutsetTexture, guiShader, mPos.X, mPos.Y, 32f * mapElem.ZoomLevel, 32f * mapElem.ZoomLevel);
             }
             else
             {
@@ -204,12 +204,12 @@ public class GuildClaimMapLayer : MapLayer
 
     public static Vector2 TranslateChunkPosToViewPos(GridPos2d gridPos, GuiElementMap mapElem)
     {
-        double num = mapElem.CurrentBlockViewBounds.X2 - mapElem.CurrentBlockViewBounds.X1;
-        double num2 = mapElem.CurrentBlockViewBounds.Z2 - mapElem.CurrentBlockViewBounds.Z1;
+        double vbx = mapElem.CurrentBlockViewBounds.X2 - mapElem.CurrentBlockViewBounds.X1;
+        double vbz = mapElem.CurrentBlockViewBounds.Z2 - mapElem.CurrentBlockViewBounds.Z1;
 
         return new Vector2(
-            (float)mapElem.Bounds.renderX + ((float)(((gridPos.X * 32) - mapElem.CurrentBlockViewBounds.X1) / num * mapElem.Bounds.InnerWidth)),
-            (float)mapElem.Bounds.renderY + ((float)(((gridPos.Z * 32) - mapElem.CurrentBlockViewBounds.Z1) / num2 * mapElem.Bounds.InnerHeight))
+            (float)mapElem.Bounds.renderX + ((float)(((gridPos.X * 32) - mapElem.CurrentBlockViewBounds.X1) / vbx * mapElem.Bounds.InnerWidth)),
+            (float)mapElem.Bounds.renderY + ((float)(((gridPos.Z * 32) - mapElem.CurrentBlockViewBounds.Z1) / vbz * mapElem.Bounds.InnerHeight))
             );
     }
 

@@ -1,5 +1,4 @@
-﻿using MareLib;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 
 namespace Guilds;
@@ -22,7 +21,7 @@ public class GuildPageGuildInvites : GuildPageEntry
         foreach (Guild guild in guildInvites)
         {
             // Add button to accept or deny invite.
-            new WidgetGuildButton(parent, () =>
+            new WidgetVanillaButton(parent, parent.Gui, () =>
             {
                 GuildPacket packet = new()
                 {
@@ -32,7 +31,7 @@ public class GuildPageGuildInvites : GuildPageEntry
                 manager.SendPacket(packet);
             }, $"Join {guild.name}").Alignment(Align.CenterTop).Fixed(Gui.Scaled(-32), Gui.Scaled(index * 12), 64, 12);
 
-            new WidgetGuildButton(parent, () =>
+            new WidgetVanillaButton(parent, parent.Gui, () =>
             {
                 GuildPacket packet = new()
                 {
@@ -47,9 +46,9 @@ public class GuildPageGuildInvites : GuildPageEntry
 
         if (guildInvites.Count == 0)
         {
-            new WidgetTextLine(parent, GuiThemes.Font, "No invites received.", GuiThemes.TextColor)
+            new WidgetTextLine(parent, parent.Gui, VanillaThemes.Font, "No invites received.", VanillaThemes.WhitishTextColor)
                 .Alignment(Align.Center)
-                .PercentWidth(1)
+                .PercentWidth(1f)
                 .FixedHeight(12);
         }
     }

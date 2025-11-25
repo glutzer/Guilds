@@ -1,6 +1,4 @@
-﻿using MareLib;
-
-namespace Guilds;
+﻿namespace Guilds;
 
 [GuildPage("Guild Roles", 0)]
 public class GuildPageGuildRoles : GuildPageEntry
@@ -21,7 +19,7 @@ public class GuildPageGuildRoles : GuildPageEntry
     {
         if (guildGui.selectedGuildId == -1)
         {
-            new WidgetTextLine(parent, GuiThemes.Font, "No guild selected.", GuiThemes.TextColor)
+            new WidgetTextLine(parent, parent.Gui, VanillaThemes.Font, "No guild selected.", VanillaThemes.WhitishTextColor)
                 .Alignment(Align.Center)
                 .PercentWidth(1)
                 .FixedHeight(12);

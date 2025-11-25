@@ -1,6 +1,4 @@
-﻿using MareLib;
-using System;
-using Vintagestory.API.Common;
+﻿using Vintagestory.API.Common;
 
 namespace Guilds;
 
@@ -9,7 +7,7 @@ public class WidgetRoleContainer : Widget
     public Guild? guild;
     public GuildGui guildGui;
 
-    public WidgetRoleContainer(Widget? parent, GuildGui guildGui) : base(parent)
+    public WidgetRoleContainer(Widget? parent, GuildGui guildGui) : base(parent, guildGui)
     {
         this.guildGui = guildGui;
         guild = guildGui.manager.guildData.GetGuild(guildGui.selectedGuildId);
@@ -20,13 +18,13 @@ public class WidgetRoleContainer : Widget
 
         if (!ownRole.HasPermissions(GuildPerms.ManageRoles))
         {
-            new WidgetTextLine(this, GuiThemes.Font, "No role permissions.", GuiThemes.TextColor, true).Alignment(Align.Center).FixedSize(64, 32);
+            new WidgetTextLine(this, guildGui, VanillaThemes.Font, "No role permissions.", VanillaThemes.WhitishTextColor, true).Alignment(Align.Center).FixedSize(64, 32);
             return;
         }
 
-        new RoleSelector(this, guild, ownRole)
+        new RoleSelector(this, guildGui, guild, ownRole)
             .Alignment(Align.LeftTop)
-            .Percent(0, 0, 0.5f, 1f);
+            .Percent(0f, 0f, 0.5f, 1f);
     }
 }
 
@@ -38,9 +36,8 @@ public class RoleSelector : Widget
     private int selectedRoleIndex = 0;
     private readonly WidgetToggleableButton[] roleSelectionButtons;
     private PermissionSelector? permissionSelector;
-    private Gui? gui;
 
-    public RoleSelector(Widget? parent, Guild guild, RoleInfo ownRole) : base(parent)
+    public RoleSelector(Widget? parent, Gui gui, Guild guild, RoleInfo ownRole) : base(parent, gui)
     {
         roleSelectionButtons = new WidgetToggleableButton[guild.roles.Length];
         SetChildSizing(ChildSizing.Height | ChildSizing.Once);
@@ -50,7 +47,7 @@ public class RoleSelector : Widget
         GuildManager manager = MainAPI.GetGameSystem<GuildManager>(EnumAppSide.Client);
 
         // Add side by side add/remove role buttons.
-        new WidgetGuildButton(this, () =>
+        new WidgetVanillaButton(this, gui, () =>
         {
             GuildPacket packet = new()
             {
@@ -61,7 +58,7 @@ public class RoleSelector : Widget
             manager.SendPacket(packet);
         }, "Add Role").Alignment(Align.CenterTop).Fixed(Gui.Scaled(-16), 0, 32, 12);
 
-        new WidgetGuildButton(this, () =>
+        new WidgetVanillaButton(this, gui, () =>
         {
             GuildPacket packet = new()
             {
@@ -79,7 +76,7 @@ public class RoleSelector : Widget
 
             int indexOfThis = i;
 
-            roleSelectionButtons[i] = (WidgetToggleableButton)new WidgetToggleableButton(this, (up) =>
+            roleSelectionButtons[i] = (WidgetToggleableButton)new WidgetToggleableButton(this, gui, (up) =>
             {
                 roleSelectionButtons[selectedRoleIndex].Release();
                 selectedRoleIndex = indexOfThis;
@@ -91,21 +88,14 @@ public class RoleSelector : Widget
         }
     }
 
-    public override void RegisterEvents(GuiEvents guiEvents)
-    {
-        gui = guiEvents.gui;
-    }
-
     public void UpdatePermissions(RoleInfo roleInfo, int guildId)
     {
-        permissionSelector?.RemoveSelf();
+        permissionSelector?.DeleteSelf();
 
-        permissionSelector = (PermissionSelector)new PermissionSelector(this, new RoleData(roleInfo, guildId))
+        permissionSelector = (PermissionSelector)new PermissionSelector(this, Gui, new RoleData(roleInfo, guildId))
             .Alignment(Align.RightTop, AlignFlags.OutsideH)
-            .Percent(0, 0, 1, 1)
+            .Percent(0f, 0f, 1f, 1f)
             .SetChildSizing(ChildSizing.Height | ChildSizing.Once);
-
-        gui?.MarkForRepartition();
     }
 }
 
@@ -131,13 +121,13 @@ public class PermissionSelector : Widget
 {
     public RoleData roleData;
 
-    public PermissionSelector(Widget? parent, RoleData roleData) : base(parent)
+    public PermissionSelector(Widget? parent, Gui gui, RoleData roleData) : base(parent, gui)
     {
         this.roleData = roleData;
 
         int index = 0;
 
-        new WidgetGuildLabeledInput(this, roleData.newName, "Name: ", (s) => roleData.newName = s, (s) => s.Length < 50)
+        new WidgetGuildLabeledInput(this, gui, roleData.newName, "Name: ", (s) => roleData.newName = s, (s) => s.Length < 50)
             .Alignment(Align.CenterTop)
             .Fixed(0, Gui.Scaled(index * 8), 64, 8);
 
@@ -146,7 +136,7 @@ public class PermissionSelector : Widget
         // Add a button for each enum in guildperms.
         foreach (GuildPerms enumType in Enum.GetValues(typeof(GuildPerms)))
         {
-            WidgetToggleableButton button = (WidgetToggleableButton)new WidgetToggleableButton(this, (up) =>
+            WidgetToggleableButton button = (WidgetToggleableButton)new WidgetToggleableButton(this, gui, (up) =>
             {
                 if (up)
                 {
@@ -165,13 +155,13 @@ public class PermissionSelector : Widget
             index++;
         }
 
-        new WidgetGuildLabeledInput(this, roleData.authority.ToString(), "Authority: ", (s) => roleData.authority = int.Parse(s), (s) => int.TryParse(s, out _))
+        new WidgetGuildLabeledInput(this, gui, roleData.authority.ToString(), "Authority: ", (s) => roleData.authority = int.Parse(s), (s) => int.TryParse(s, out _))
             .Alignment(Align.CenterTop)
             .Fixed(0, Gui.Scaled(index * 8), 64, 8);
 
         index++;
 
-        new WidgetGuildButton(this, () =>
+        new WidgetVanillaButton(this, gui, () =>
         {
             RoleUpdateInfo packet = new()
             {

@@ -1,6 +1,5 @@
 ﻿using Newtonsoft.Json;
 using ProtoBuf;
-using System;
 
 namespace Guilds;
 

@@ -1,5 +1,4 @@
-﻿using MareLib;
-using Vintagestory.API.Common;
+﻿using Vintagestory.API.Common;
 
 namespace Guilds;
 
@@ -17,7 +16,7 @@ public class GuildPageGuildInfo : GuildPageEntry
 
         if (selectedGuildId == -1)
         {
-            new WidgetTextLine(parent, GuiThemes.Font, "No guild selected.", GuiThemes.TextColor).Alignment(Align.Center)
+            new WidgetTextLine(parent, parent.Gui, VanillaThemes.Font, "No guild selected.", VanillaThemes.WhitishTextColor).Alignment(Align.Center)
                 .PercentWidth(1)
                 .FixedHeight(12);
 
@@ -27,7 +26,7 @@ public class GuildPageGuildInfo : GuildPageEntry
         Guild? guild = guildGui.manager.guildData.GetGuild(selectedGuildId);
         if (guild == null) return;
 
-        new WidgetTextLine(parent, GuiThemes.Font, guild.name, GuiThemes.TextColor)
+        new WidgetTextLine(parent, parent.Gui, VanillaThemes.Font, guild.name, VanillaThemes.WhitishTextColor)
             .Alignment(Align.CenterTop)
             .PercentWidth(1)
             .FixedHeight(12);
@@ -35,7 +34,7 @@ public class GuildPageGuildInfo : GuildPageEntry
         RoleInfo? roleInfo = guild.GetRole(ownUid);
         if (roleInfo?.id == 1)
         {
-            new WidgetHoldDownGuildButton(parent, 5, () =>
+            new WidgetHoldDownGuildButton(parent, parent.Gui, 5f, () =>
             {
                 GuildPacket packet = new()
                 {
@@ -48,7 +47,7 @@ public class GuildPageGuildInfo : GuildPageEntry
         }
         else
         {
-            new WidgetGuildButton(parent, () =>
+            new WidgetVanillaButton(parent, parent.Gui, () =>
             {
                 GuildPacket packet = new()
                 {
@@ -60,7 +59,7 @@ public class GuildPageGuildInfo : GuildPageEntry
             }, "Leave Guild").Alignment(Align.CenterTop).Fixed(0, Gui.Scaled(256), 32, 12);
         }
 
-        WidgetToggleableButton repButton = new(parent, (on) =>
+        WidgetToggleableButton repButton = new(parent, parent.Gui, (on) =>
         {
             GuildPacket packet = new()
             {
@@ -73,7 +72,7 @@ public class GuildPageGuildInfo : GuildPageEntry
         repButton.Alignment(Align.CenterTop).Fixed(0, Gui.Scaled(12), 32, 12);
 
         ClaimManager claimManager = MainAPI.GetGameSystem<ClaimManager>(EnumAppSide.Client);
-        new WidgetTextLine(repButton, GuiThemes.Font, $"Claims: {claimManager.claimData.GetClaimCount(guild)}/{ClaimManager.GetMaxClaims(guild)}", GuiThemes.TextColor, true)
+        new WidgetTextLine(repButton, parent.Gui, VanillaThemes.Font, $"Claims: {claimManager.claimData.GetClaimCount(guild)}/{ClaimManager.GetMaxClaims(guild)}", VanillaThemes.WhitishTextColor, true)
             .Alignment(Align.LeftMiddle, AlignFlags.OutsideH)
             .FixedSize(32, 12);
 
@@ -85,12 +84,12 @@ public class GuildPageGuildInfo : GuildPageEntry
                 color = guild.Color
             };
 
-            new WidgetColorPicker(parent, color =>
+            new WidgetColorPicker(parent, parent.Gui, color =>
             {
                 packet.color = color;
             }, guild.Color).Alignment(Align.CenterTop).Fixed(0, Gui.Scaled(32), 64, 64);
 
-            new WidgetGuildLabeledInput(parent, guild.name, "Guild Name", s =>
+            new WidgetGuildLabeledInput(parent, parent.Gui, guild.name, "Guild Name", s =>
             {
                 packet.name = s;
             }, s =>
@@ -98,7 +97,7 @@ public class GuildPageGuildInfo : GuildPageEntry
                 return s.Length is > 2 and < 33;
             }).Alignment(Align.CenterTop).Fixed(0, Gui.Scaled(112), 64, 12);
 
-            new WidgetGuildButton(parent, () =>
+            new WidgetVanillaButton(parent, parent.Gui, () =>
             {
                 GuildPacket p = GuildPacket.Create(EnumGuildPacket.UpdateInfo, packet, null, guild.id, 0);
                 manager.SendPacket(p);
@@ -106,6 +105,9 @@ public class GuildPageGuildInfo : GuildPageEntry
         }
 
         PlayerMetrics? metrics = manager.guildData.GetMetrics(ownUid);
-        if (metrics != null && metrics.reppedGuildId == selectedGuildId) repButton.LockDown();
+        if (metrics != null && metrics.reppedGuildId == selectedGuildId)
+        {
+            repButton.LockDown();
+        }
     }
 }

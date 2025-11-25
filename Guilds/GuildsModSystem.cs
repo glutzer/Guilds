@@ -1,4 +1,6 @@
-﻿using Vintagestory.API.Client;
+﻿global using NutsLib;
+global using System;
+using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 using Vintagestory.API.Server;
 

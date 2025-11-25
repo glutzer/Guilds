@@ -1,6 +1,4 @@
-﻿using MareLib;
-using OpenTK.Mathematics;
-using System;
+﻿using OpenTK.Mathematics;
 
 namespace Guilds;
 
@@ -9,14 +7,12 @@ namespace Guilds;
 /// </summary>
 public class WidgetToggleableButton : WidgetBaseToggleableButton
 {
-    private readonly NineSliceTexture texture;
     private readonly TextObject textObj;
     private Vector4 color;
 
-    public WidgetToggleableButton(Widget? parent, Action<bool> onClick, string text, bool lockedDown = true) : base(parent, onClick, !lockedDown)
+    public WidgetToggleableButton(Widget? parent, Gui gui, Action<bool> onClick, string text, bool lockedDown = true) : base(parent, gui, onClick, false, !lockedDown)
     {
-        texture = GuiThemes.Title;
-        textObj = new TextObject(text, GuiThemes.Font, 50, GuiThemes.TextColor)
+        textObj = new TextObject(text, VanillaThemes.Font, 50, VanillaThemes.WhitishTextColor)
         {
             Shadow = true
         };
@@ -26,9 +22,9 @@ public class WidgetToggleableButton : WidgetBaseToggleableButton
             textObj.SetScaleFromWidget(this, 0.9f, 0.5f);
         };
 
-        color = GuiThemes.ButtonColor;
+        color = Vector4.One;
 
-        this.onClick += (up) =>
+        onClick += (up) =>
         {
             MainAPI.Capi.Gui.PlaySound("tick");
         };
@@ -39,20 +35,22 @@ public class WidgetToggleableButton : WidgetBaseToggleableButton
     /// </summary>
     public void LockDown()
     {
-        state = EnumButtonState.Active;
+        enabled = true;
     }
 
-    public override void OnRender(float dt, MareShader shader)
+    public override void OnRender(float dt, ShaderGui shader)
     {
+        NineSliceTexture tex = enabled ? VanillaThemes.InsetTexture : VanillaThemes.OutsetTexture;
+
         Vector4 c = color;
-        Vector4 f = GuiThemes.TextColor;
+        Vector4 f = VanillaThemes.WhitishTextColor;
 
         if (state == EnumButtonState.Active)
         {
             c.Xyz *= 0.6f;
             f.Xyz *= 0.6f;
             shader.Uniform("color", c);
-            RenderTools.RenderNineSlice(texture, shader, X, Y, Width, Height);
+            RenderTools.RenderNineSlice(tex, shader, X, Y, Width, Height);
         }
 
         if (state == EnumButtonState.Hovered)
@@ -60,16 +58,28 @@ public class WidgetToggleableButton : WidgetBaseToggleableButton
             c.Xyz *= 1.2f;
             f.Xyz *= 1.2f;
             shader.Uniform("color", c);
-            RenderTools.RenderNineSlice(texture, shader, X, Y, Width, Height);
+            RenderTools.RenderNineSlice(tex, shader, X, Y, Width, Height);
         }
 
         if (state == EnumButtonState.Normal)
         {
             shader.Uniform("color", c);
-            RenderTools.RenderNineSlice(texture, shader, X, Y, Width, Height);
+            RenderTools.RenderNineSlice(tex, shader, X, Y, Width, Height);
         }
 
         textObj.color = f;
         textObj.RenderCenteredLine(XCenter, YCenter, shader, true);
+
+        shader.ResetColor();
+    }
+
+    protected override void OnMousedOver()
+    {
+        MainAPI.Capi.Gui.PlaySound("menubutton");
+    }
+
+    protected override void OnClicked()
+    {
+        MainAPI.Capi.Gui.PlaySound("menubutton_press");
     }
 }

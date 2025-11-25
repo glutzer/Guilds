@@ -1,6 +1,4 @@
-﻿using MareLib;
-
-namespace Guilds;
+﻿namespace Guilds;
 
 public class GuildPageAttribute : ClassAttribute
 {

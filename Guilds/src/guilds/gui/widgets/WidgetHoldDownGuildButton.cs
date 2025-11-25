@@ -1,6 +1,4 @@
-﻿using MareLib;
-using OpenTK.Mathematics;
-using System;
+﻿using OpenTK.Mathematics;
 using Vintagestory.API.Client;
 
 namespace Guilds;
@@ -14,21 +12,19 @@ public class WidgetHoldDownGuildButton : Widget
     private readonly float time;
 
     private readonly NineSliceTexture texture;
-    protected Vector4 color;
     protected Vector4 fontColor;
 
     protected TextObject text;
 
-    public WidgetHoldDownGuildButton(Widget? parent, float time, Action onClick, string text) : base(parent)
+    public WidgetHoldDownGuildButton(Widget? parent, Gui gui, float time, Action onClick, string text) : base(parent, gui)
     {
-        color = GuiThemes.ButtonColor;
-        fontColor = GuiThemes.TextColor;
+        fontColor = VanillaThemes.WhitishTextColor;
 
         this.time = time;
         this.onClick = onClick;
-        texture = GuiThemes.Button;
+        texture = VanillaThemes.OutsetTexture;
 
-        this.text = new TextObject(text, GuiThemes.Font, 50, fontColor)
+        this.text = new TextObject(text, VanillaThemes.Font, 50, fontColor)
         {
             Shadow = true
         };
@@ -46,7 +42,7 @@ public class WidgetHoldDownGuildButton : Widget
         guiEvents.MouseUp += GuiEvents_MouseUp;
     }
 
-    public override void OnRender(float dt, MareShader shader)
+    public override void OnRender(float dt, ShaderGui shader)
     {
         if (state != EnumButtonState.Active)
         {
@@ -64,13 +60,13 @@ public class WidgetHoldDownGuildButton : Widget
             }
         }
 
-        accum = Math.Clamp(accum, 0, time);
+        accum = Math.Clamp(accum, 0f, time);
 
-        MareShader barShader = MareShaderRegistry.Get("bargui");
+        NuttyShader barShader = NuttyShaderRegistry.Get("bargui");
         barShader.Use();
         barShader.Uniform("progress", accum / time);
 
-        Vector4 c = color;
+        Vector4 c = Vector4.One;
         Vector4 f = fontColor;
 
         if (state == EnumButtonState.Active)
@@ -118,7 +114,7 @@ public class WidgetHoldDownGuildButton : Widget
 
     protected virtual void GuiEvents_MouseDown(MouseEvent obj)
     {
-        if (!obj.Handled && IsInsideAndClip(obj))
+        if (!obj.Handled && IsInAllBounds(obj))
         {
             obj.Handled = true;
             state = EnumButtonState.Active;
@@ -129,6 +125,6 @@ public class WidgetHoldDownGuildButton : Widget
     {
         if (state != EnumButtonState.Active) return;
 
-        state = IsInsideAndClip(obj) ? EnumButtonState.Hovered : EnumButtonState.Normal;
+        state = IsInAllBounds(obj) ? EnumButtonState.Hovered : EnumButtonState.Normal;
     }
 }

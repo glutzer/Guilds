@@ -1,5 +1,4 @@
-﻿using MareLib;
-using OpenTK.Mathematics;
+﻿using OpenTK.Mathematics;
 using ProtoBuf;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;

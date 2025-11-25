@@ -1,5 +1,4 @@
 ﻿using HarmonyLib;
-using MareLib;
 using System.Collections.Generic;
 using Vintagestory.API.Common;
 using Vintagestory.API.MathTools;
@@ -22,13 +21,24 @@ public class Patches
         }
     }
 
+    private static LandClaim? guildClaim;
+    private static LandClaim GetGuildClaim()
+    {
+        guildClaim ??= new LandClaim()
+        {
+            LastKnownOwnerName = "Guild Claim"
+        };
+
+        return guildClaim;
+    }
+
     // Rewrite this to make player unable to touch claimed chunks instead.
     [HarmonyPatch(typeof(WorldMap))]
     [HarmonyPatch("GetBlockingLandClaimant")]
     public static class ClaimPatch
     {
         [HarmonyPrefix]
-        public static bool Prefix(ref string __result, WorldMap __instance, IPlayer forPlayer, BlockPos pos, EnumBlockAccessFlags accessFlag)
+        public static bool Prefix(ref LandClaim __result, WorldMap __instance, IPlayer forPlayer, BlockPos pos, EnumBlockAccessFlags accessFlag)
         {
             if (forPlayer == null) return false;
 
@@ -40,7 +50,7 @@ public class Patches
                 {
                     if (item.PositionInside(pos) && (item.TestPlayerAccess(forPlayer, accessFlag) == EnumPlayerAccessResult.Denied) && (!item.AllowUseEveryone || accessFlag != EnumBlockAccessFlags.Use))
                     {
-                        __result = item.LastKnownOwnerName;
+                        __result = item;
                         return false;
                     }
                 }
@@ -60,19 +70,19 @@ public class Patches
                 RoleInfo? roleInfo = guild.GetRole(forPlayer.PlayerUID);
                 if (roleInfo == null)
                 {
-                    __result = $"guild {guild.name}";
+                    __result = GetGuildClaim();
                     return false;
                 }
 
                 if (accessFlag == EnumBlockAccessFlags.Use && !roleInfo.HasPermissions(GuildPerms.UseBlocks))
                 {
-                    __result = $"{guild.name} has not granted use permissions";
+                    __result = GetGuildClaim();
                     return false;
                 }
 
                 if (accessFlag == EnumBlockAccessFlags.BuildOrBreak && !roleInfo.HasPermissions(GuildPerms.BreakBlocks))
                 {
-                    __result = $"{guild.name} has not granted build permissions";
+                    __result = GetGuildClaim();
                     return false;
                 }
             }

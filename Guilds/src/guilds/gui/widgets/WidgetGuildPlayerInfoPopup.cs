@@ -1,5 +1,4 @@
-﻿using MareLib;
-using System.Linq;
+﻿using System.Linq;
 using Vintagestory.API.Client;
 using Vintagestory.API.Common;
 
@@ -9,7 +8,7 @@ public class WidgetGuildPlayerInfoPopup : Widget
 {
     public override int SortPriority => 1;
 
-    public WidgetGuildPlayerInfoPopup(Widget? parent, string playerUid) : base(parent)
+    public WidgetGuildPlayerInfoPopup(Widget? parent, Gui gui, string playerUid) : base(parent, gui)
     {
         // Fits all children.
         SetChildSizing(ChildSizing.Width | ChildSizing.Height);
@@ -25,10 +24,10 @@ public class WidgetGuildPlayerInfoPopup : Widget
             {
                 if (ownRole.HasPermissions(GuildPerms.Kick) && ownRole.authority > targetRole.authority)
                 {
-                    new WidgetHoldDownGuildButton(this, 2, () =>
+                    new WidgetHoldDownGuildButton(this, gui, 2, () =>
                     {
                         manager.SendPacket(GuildPacket.Create(EnumGuildPacket.Kick, playerUid, guild.id));
-                        RemoveSelf();
+                        DeleteSelf();
                     }, $"Kick From {guild.name}").Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
                 }
             }
@@ -37,18 +36,18 @@ public class WidgetGuildPlayerInfoPopup : Widget
             {
                 if (guild.IsInvited(playerUid))
                 {
-                    new WidgetGuildButton(this, () =>
+                    new WidgetVanillaButton(this, gui, () =>
                     {
                         manager.SendPacket(GuildPacket.Create(EnumGuildPacket.CancelInvite, playerUid, guild.id, 0));
-                        RemoveSelf();
+                        DeleteSelf();
                     }, $"Cancel {guild.name} Invite").Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
                 }
                 else
                 {
-                    new WidgetGuildButton(this, () =>
+                    new WidgetVanillaButton(this, gui, () =>
                     {
                         manager.SendPacket(GuildPacket.Create(EnumGuildPacket.Invite, playerUid, guild.id, 0));
-                        RemoveSelf();
+                        DeleteSelf();
                     }, $"Invite To {guild.name}").Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
                 }
             }
@@ -61,19 +60,19 @@ public class WidgetGuildPlayerInfoPopup : Widget
                     if (role.authority >= ownRole.authority) continue;
                     if (role.id == promoteRole.id) continue;
 
-                    new WidgetHoldDownGuildButton(this, 2, () =>
+                    new WidgetHoldDownGuildButton(this, gui, 2f, () =>
                     {
                         manager.SendPacket(GuildPacket.Create(EnumGuildPacket.Promote, playerUid, guild.id, role.id));
-                        RemoveSelf();
+                        DeleteSelf();
                     }, role.authority >= promoteRole.authority ? $"Promote To {role.name}" : $"Demote To {role.name}").Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
                 }
 
                 if (ownRole.id == 1) // Founder.
                 {
-                    new WidgetHoldDownGuildButton(this, 10, () =>
+                    new WidgetHoldDownGuildButton(this, gui, 10f, () =>
                     {
                         manager.SendPacket(GuildPacket.Create(EnumGuildPacket.Promote, playerUid, guild.id, 1));
-                        RemoveSelf();
+                        DeleteSelf();
                     }, $"Make Guild Leader").Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
                 }
             }
@@ -89,7 +88,7 @@ public class WidgetGuildPlayerInfoPopup : Widget
     {
         if (!IsInAllBounds(obj))
         {
-            RemoveSelf();
+            DeleteSelf();
         }
     }
 }

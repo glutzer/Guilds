@@ -1,5 +1,4 @@
-﻿using MareLib;
-using OpenTK.Mathematics;
+﻿using OpenTK.Mathematics;
 
 namespace Guilds;
 
@@ -14,10 +13,10 @@ public class WidgetFadingText : Widget
     public readonly TextObject text;
     private readonly bool left;
 
-    public WidgetFadingText(Widget? parent, string label, int fontScale, bool left, Vector3 notificationColor) : base(parent)
+    public WidgetFadingText(Widget? parent, Gui gui, string label, int fontScale, bool left, Vector3 notificationColor) : base(parent, gui)
     {
         texture = GuiThemes.Blank;
-        text = new TextObject(label, GuiThemes.Font, fontScale, new Vector4(notificationColor, 1f))
+        text = new TextObject(label, VanillaThemes.Font, fontScale, new Vector4(notificationColor, 1f))
         {
             Shadow = true
         };
@@ -32,22 +31,22 @@ public class WidgetFadingText : Widget
         FixedSize(pixelWidth, pixelHeight);
     }
 
-    public override void OnRender(float dt, MareShader shader)
+    public override void OnRender(float dt, ShaderGui shader)
     {
         age += dt;
 
         if (age > FADE_TIME)
         {
-            RemoveSelf();
+            DeleteSelf();
             return;
         }
 
-        shader.Uniform("color", new Vector4(0, 0, 0, (1 - (age / FADE_TIME)) * 0.5f));
-        shader.BindTexture(texture, "tex2d");
+        shader.Color = new Vector4(0f, 0f, 0f, (1f - (age / FADE_TIME)) * 0.5f);
 
+        shader.BindTexture(texture, "tex2d");
         RenderTools.RenderQuad(shader, X, Y, Width, Height);
 
-        shader.Uniform("color", Vector4.One);
+        shader.ResetColor();
 
         text.color.W = 1 - (age / FADE_TIME);
 

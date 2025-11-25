@@ -1,5 +1,4 @@
-﻿using MareLib;
-using OpenTK.Mathematics;
+﻿using OpenTK.Mathematics;
 using Vintagestory.API.Client;
 
 namespace Guilds;
@@ -23,12 +22,10 @@ public class NotificationHud : Gui
             fader.FixedPos(pos.X, pos.Y - (int)(fader.text.font.LineHeight * fader.text.fontScale));
         }
 
-        Widget widget = new WidgetFadingText(null, text, 30, false, color)
+        Widget widget = new WidgetFadingText(null, this, text, 30, false, color)
             .Alignment(Align.RightBottom);
 
         AddWidget(widget);
-
-        MarkForRepartition();
 
         MainAPI.Capi.Gui.PlaySound("tick");
     }

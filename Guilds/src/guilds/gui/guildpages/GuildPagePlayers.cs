@@ -1,5 +1,4 @@
-﻿using MareLib;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using Vintagestory.API.Common;
 
@@ -17,15 +16,15 @@ public class GuildPagePlayers : GuildPageEntry
         Column<PlayerMetrics> nameColumn = new("Name", 1f, (member) => member.lastName, (a, b) => a.lastName.CompareTo(b.lastName));
         Column<PlayerMetrics> onlineColumn = new("Online", 0.5f, (member) => member.GetLastOnlineString(), (a, b) => b.lastOnline.CompareTo(a.lastOnline));
 
-        List<PlayerMetrics> metrics = MainAPI.GetGameSystem<GuildManager>(EnumAppSide.Client).guildData.AllMetrics.OrderByDescending(x => x.lastOnline).ToList();
+        List<PlayerMetrics> metrics = [.. MainAPI.GetGameSystem<GuildManager>(EnumAppSide.Client).guildData.AllMetrics.OrderByDescending(x => x.lastOnline)];
 
-        new WidgetSortableTable<PlayerMetrics>(parent, metrics, (member, field) =>
+        new WidgetSortableTable<PlayerMetrics>(parent, parent.Gui, metrics, (member, field) =>
         {
-            new WidgetGuildPlayerInfoPopup(field, member.uid)
+            new WidgetGuildPlayerInfoPopup(field, parent.Gui, member.uid)
             .Alignment(Align.LeftTop)
             .FixedSize(12, 8)
             .FixedPos(Gui.MouseX - field.X, Gui.MouseY - field.Y);
             guildGui.MarkForRepartition();
-        }, nameColumn, onlineColumn).Alignment(Align.CenterTop).Percent(0, 0, 0.8f, 0.05f).FixedHeight(12);
+        }, nameColumn, onlineColumn).Alignment(Align.CenterTop).Percent(0f, 0f, 0.8f, 0.05f).FixedHeight(12);
     }
 }

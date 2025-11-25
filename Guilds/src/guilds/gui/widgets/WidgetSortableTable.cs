@@ -1,6 +1,4 @@
-﻿using MareLib;
-using OpenTK.Mathematics;
-using System;
+﻿using OpenTK.Mathematics;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -30,11 +28,10 @@ public class WidgetSortableTable<T> : Widget
     private readonly List<T> data;
     private readonly Column<T>[] columns;
 
-    private Gui? gui;
     private readonly Widget container;
     private readonly Action<T, WidgetRightClickableField> onFieldClicked;
 
-    public WidgetSortableTable(Widget? parent, List<T> data, Action<T, WidgetRightClickableField> onFieldClicked, params Column<T>[] columns) : base(parent)
+    public WidgetSortableTable(Widget? parent, Gui gui, List<T> data, Action<T, WidgetRightClickableField> onFieldClicked, params Column<T>[] columns) : base(parent, gui)
     {
         this.data = data;
         this.onFieldClicked = onFieldClicked;
@@ -42,9 +39,9 @@ public class WidgetSortableTable<T> : Widget
 
         // Initialize columns.
         float totalWeight = columns.Sum(c => c.widthWeight);
-        float totalAdvance = 0;
+        float totalAdvance = 0f;
 
-        Widget topButtonContainer = new WidgetContainer(this)
+        Widget topButtonContainer = new WidgetContainer(this, gui)
             .PercentWidth(1)
             .FixedHeight(12)
             .Alignment(Align.CenterTop);
@@ -55,7 +52,7 @@ public class WidgetSortableTable<T> : Widget
 
             float ratio = column.widthWeight / totalWeight;
 
-            new WidgetToggleableButton(topButtonContainer, (down) =>
+            new WidgetToggleableButton(topButtonContainer, gui, (down) =>
             {
                 if (!down) return;
 
@@ -70,14 +67,14 @@ public class WidgetSortableTable<T> : Widget
                 UpdateData();
             },
             $"{column.name}")
-                .Percent(totalAdvance, 0, ratio, 1)
+                .Percent(totalAdvance, 0f, ratio, 1f)
                 .Alignment(Align.LeftTop);
 
             totalAdvance += ratio;
         }
 
-        container = new WidgetContainer(this)
-            .PercentWidth(1)
+        container = new WidgetContainer(this, gui)
+            .PercentWidth(1f)
             .FixedY(Gui.Scaled(12))
             .Alignment(Align.CenterTop)
             .SetChildSizing(ChildSizing.Height | ChildSizing.Once);
@@ -85,19 +82,14 @@ public class WidgetSortableTable<T> : Widget
         UpdateData();
     }
 
-    public override void RegisterEvents(GuiEvents guiEvents)
-    {
-        gui = guiEvents.gui;
-    }
-
     public void UpdateData()
     {
-        container.ClearChildren();
+        container.DeleteChildren();
 
         for (int i = 0; i < data.Count; i++)
         {
             float totalWeight = columns.Sum(c => c.widthWeight);
-            float totalAdvance = 0;
+            float totalAdvance = 0f;
 
             T datum = data[i];
 
@@ -109,8 +101,8 @@ public class WidgetSortableTable<T> : Widget
 
                 Vector2i pos = GetFixedPos();
 
-                WidgetRightClickableField field = (WidgetRightClickableField)new WidgetRightClickableField(container, () => { }, column.getValue(datum))
-                    .Percent(totalAdvance, 0, ratio, 1)
+                WidgetRightClickableField field = (WidgetRightClickableField)new WidgetRightClickableField(container, Gui, () => { }, column.getValue(datum))
+                    .Percent(totalAdvance, 0f, ratio, 1f)
                     .FixedY(Gui.Scaled(i * 8)) // Take height of sort button.
                     .FixedHeight(8)
                     .Alignment(Align.LeftTop);
@@ -123,7 +115,5 @@ public class WidgetSortableTable<T> : Widget
                 totalAdvance += ratio;
             }
         }
-
-        gui?.MarkForRepartition();
     }
 }

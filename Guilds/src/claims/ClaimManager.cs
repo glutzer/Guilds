@@ -1,9 +1,7 @@
 ﻿using HarmonyLib;
-using MareLib;
 using Newtonsoft.Json;
 using OpenTK.Mathematics;
 using ProtoBuf;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -103,10 +101,10 @@ public struct GridPos2d : IEquatable<GridPos2d>
 public class ClaimData
 {
     [JsonProperty]
-    public Dictionary<GridPos2d, GuildClaim> guildClaims = new();
+    public Dictionary<GridPos2d, GuildClaim> guildClaims = [];
 
     [JsonProperty]
-    public Dictionary<int, int> guildClaimCount = new();
+    public Dictionary<int, int> guildClaimCount = [];
 
     public bool TryGetClaim(GridPos2d position, [NotNullWhen(true)] out GuildClaim claim)
     {
@@ -258,8 +256,8 @@ public class ClaimManager : NetworkedGameSystem
         {
             api.ModLoader.GetModSystem<WorldMapManager>().RegisterMapLayer<GuildClaimMapLayer>("guildclaims", 0.8f);
 
-            MareShaderRegistry.AddShader("guilds:claimgui", "guilds:claimgui", "claimgui");
-            MareShaderRegistry.AddShader("guilds:bargui", "guilds:bargui", "bargui");
+            NuttyShaderRegistry.AddShader("guilds:claimgui", "guilds:claimgui", "claimgui");
+            NuttyShaderRegistry.AddShader("guilds:bargui", "guilds:bargui", "bargui");
         }
     }
 
@@ -297,14 +295,14 @@ public class ClaimManager : NetworkedGameSystem
         Guild? reppedGuild = guildManager.guildData.GetGuild(metrics.reppedGuildId);
         if (reppedGuild == null)
         {
-            NotificationSystem.SendNotification("No guild repped.", player, GuiThemes.Red);
+            NotificationSystem.SendNotification("No guild repped.", player, VanillaThemes.Red);
             return;
         }
 
         RoleInfo? role = reppedGuild.GetRole(player.PlayerUID);
         if (role == null || !role.HasPermissions(GuildPerms.ManageClaims))
         {
-            NotificationSystem.SendNotification("No claim permissions.", player, GuiThemes.Red);
+            NotificationSystem.SendNotification("No claim permissions.", player, VanillaThemes.Red);
             return;
         }
 
@@ -318,7 +316,7 @@ public class ClaimManager : NetworkedGameSystem
                 int claimCount = claimData.GetClaimCount(reppedGuild);
                 if (claimCount > 1 && GuildsConfig.Instance.onlyClaimAdjacents && !IsAdjacentToEmpty(packet.position, reppedGuild.id))
                 {
-                    NotificationSystem.SendNotification("May only unclaim border tiles.", player, GuiThemes.Red);
+                    NotificationSystem.SendNotification("May only unclaim border tiles.", player, VanillaThemes.Red);
                     return;
                 }
                 claimData.RemoveClaim(packet.position);
@@ -331,12 +329,12 @@ public class ClaimManager : NetworkedGameSystem
             int maxClaims = GetMaxClaims(reppedGuild);
             if (claimCount >= maxClaims)
             {
-                NotificationSystem.SendNotification("Max claims reached.", player, GuiThemes.Red);
+                NotificationSystem.SendNotification("Max claims reached.", player, VanillaThemes.Red);
                 return;
             }
             if (claimCount > 0 && GuildsConfig.Instance.onlyClaimAdjacents && !IsAdjacent(packet.position, reppedGuild.id))
             {
-                NotificationSystem.SendNotification("May only claim adjacent tiles.", player, GuiThemes.Red);
+                NotificationSystem.SendNotification("May only claim adjacent tiles.", player, VanillaThemes.Red);
                 return;
             }
 
@@ -344,7 +342,7 @@ public class ClaimManager : NetworkedGameSystem
             Vector2d chunkPos = new((packet.position.X * 32) + 16, (packet.position.Z * 32) + 16);
             if (Vector2d.Distance(playerPos, chunkPos) > GuildsConfig.Instance.claimRadius)
             {
-                NotificationSystem.SendNotification($"Must be within {GuildsConfig.Instance.claimRadius} blocks to claim.", player, GuiThemes.Red);
+                NotificationSystem.SendNotification($"Must be within {GuildsConfig.Instance.claimRadius} blocks to claim.", player, VanillaThemes.Red);
                 return;
             }
 
@@ -434,7 +432,7 @@ public class ClaimManager : NetworkedGameSystem
 
         if (claimData.guildClaims.Count > 0)
         {
-            claimData.guildClaimCount ??= new Dictionary<int, int>();
+            claimData.guildClaimCount ??= [];
 
             foreach (GuildClaim claim in claimData.guildClaims.Values)
             {

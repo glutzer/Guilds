@@ -1,6 +1,4 @@
-﻿using MareLib;
-using OpenTK.Mathematics;
-using Vintagestory.API.Common;
+﻿using Vintagestory.API.Common;
 using Vintagestory.API.Util;
 
 namespace Guilds;
@@ -14,20 +12,15 @@ public class PageCreateGuild : GuildPageEntry
 
     public override void OnCreatePage(Widget parent)
     {
-        Widget bg = new WidgetSliceBackground(parent, GuiThemes.Title, new Vector4(0.1f, 0.1f, 0.1f, 1))
-            .Alignment(Align.Center)
+        WidgetVanillaTextInputBox textB = (WidgetVanillaTextInputBox)new WidgetVanillaTextInputBox(parent, parent.Gui, false, true, null, null, "Guild Name").Alignment(Align.Center)
             .Fixed(0, 0, 64, 12);
 
-        WidgetTextBoxSingle textBox = (WidgetTextBoxSingle)new WidgetTextBoxSingle(bg, FontRegistry.GetFont("friz"), Vector4.One)
-        .Alignment(Align.Center)
-        .Fixed(0, 0, 64, 12);
-
-        new WidgetGuildButton(textBox, () =>
+        new WidgetVanillaButton(textB, parent.Gui, () =>
         {
             GuildPacket packet = new()
             {
                 type = EnumGuildPacket.Create,
-                data = SerializerUtil.Serialize(textBox.text.Text)
+                data = SerializerUtil.Serialize(textB.text.Text)
             };
 
             MainAPI.GetGameSystem<GuildManager>(EnumAppSide.Client).SendPacket(packet);

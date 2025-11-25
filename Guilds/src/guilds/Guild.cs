@@ -2,7 +2,6 @@
 using OpenTK.Mathematics;
 using ProtoBuf;
 using ProtoBuf.Meta;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -101,7 +100,7 @@ public class RoleInfo
 public class GuildData
 {
     [JsonProperty]
-    public Dictionary<int, Guild> guilds = new();
+    public Dictionary<int, Guild> guilds = [];
 
     [JsonProperty]
     public int nextGuildId = 0;
@@ -110,19 +109,19 @@ public class GuildData
     /// Map of player uid to every guild id they are in.
     /// </summary>
     [JsonProperty]
-    public Dictionary<string, HashSet<int>> playerToGuilds = new();
+    public Dictionary<string, HashSet<int>> playerToGuilds = [];
 
     /// <summary>
     /// Player uid to guilds they are invited to.
     /// </summary>
     [JsonProperty]
-    public Dictionary<string, HashSet<int>> playerToInvites = new();
+    public Dictionary<string, HashSet<int>> playerToInvites = [];
 
     /// <summary>
     /// Metrics for every player that has logged in, by uid.
     /// </summary>
     [JsonProperty]
-    public Dictionary<string, PlayerMetrics> playerMetrics = new();
+    public Dictionary<string, PlayerMetrics> playerMetrics = [];
     public IEnumerable<PlayerMetrics> AllMetrics => playerMetrics.Values;
 
     public bool isClient = false;
@@ -138,7 +137,7 @@ public class GuildData
     /// </summary>
     public void VerifyDataIntegrity(ICoreServerAPI sapi)
     {
-        guilds ??= new Dictionary<int, Guild>();
+        guilds ??= [];
 
         // Set offline to players not here.
         foreach (PlayerMetrics metrics in AllMetrics)
@@ -185,7 +184,7 @@ public class GuildData
             }
         }
 
-        List<string> toRemove = new();
+        List<string> toRemove = [];
         foreach (KeyValuePair<string, PlayerMetrics> kvp in playerMetrics)
         {
             // Check if over 6 months since last login.
@@ -209,7 +208,7 @@ public class GuildData
     {
         if (!playerToInvites.TryGetValue(playerUid, out HashSet<int>? guildList) || guildList == null)
         {
-            guildList = new HashSet<int>();
+            guildList = [];
             playerToInvites[playerUid] = guildList;
         }
 
@@ -278,7 +277,7 @@ public class GuildData
     {
         if (!playerToGuilds.TryGetValue(playerUid, out HashSet<int>? guildList) || guildList == null)
         {
-            guildList = new HashSet<int>();
+            guildList = [];
             playerToGuilds[playerUid] = guildList;
         }
 
@@ -331,8 +330,7 @@ public class GuildData
 
     public bool IsGuildNameAllowed(string guildName)
     {
-        if (guilds.Values.Any(g => g.name == guildName)) return false;
-        return guildName.Length is not < 3 and not > 32;
+        return !guilds.Values.Any(g => g.name == guildName) && guildName.Length is not < 3 and not > 32;
     }
 
     public bool TryCreateGuild(string guildName, string foundingPlayerUid)
@@ -340,13 +338,13 @@ public class GuildData
         // Guild exists with this name already.
         if (!IsGuildNameAllowed(guildName))
         {
-            if (isClient) NotificationSystem.AddNotification("Guild name taken.", GuiThemes.Red);
+            if (isClient) NotificationSystem.AddNotification("Guild name taken.", VanillaThemes.Red);
             return false;
         }
 
         if (GetPlayersGuilds(foundingPlayerUid).Count > GuildsConfig.Instance.maxGuildsPerPlayer)
         {
-            if (isClient) NotificationSystem.AddNotification("You are in too many guilds.", GuiThemes.Red);
+            if (isClient) NotificationSystem.AddNotification("You are in too many guilds.", VanillaThemes.Red);
             return false; // Too many guilds.
         }
 
@@ -388,6 +386,11 @@ public class GuildData
         if (!isClient)
         {
             NotificationSystem.BroadcastNotification($"Guild {guild.name} disbanded.");
+        }
+
+        if (!isClient)
+        {
+            MainAPI.GetServerSystem<ClaimManager>().OnGuildDisbanded(guild.id);
         }
 
         return true;
@@ -593,18 +596,11 @@ public class PlayerMetrics
 
         long timeSinceLastOnline = currentTime - lastOnline;
 
-        if (timeSinceLastOnline < 60)
-        {
-            return $"{timeSinceLastOnline}s ago";
-        }
-        else if (timeSinceLastOnline < 3600)
-        {
-            return $"{timeSinceLastOnline / 60}m ago";
-        }
-        else
-        {
-            return timeSinceLastOnline < 86400 ? $"{timeSinceLastOnline / 3600}h ago" : $"{timeSinceLastOnline / 86400}d ago";
-        }
+        return timeSinceLastOnline < 60
+            ? $"{timeSinceLastOnline}s ago"
+            : timeSinceLastOnline < 3600
+                ? $"{timeSinceLastOnline / 60}m ago"
+                : timeSinceLastOnline < 86400 ? $"{timeSinceLastOnline / 3600}h ago" : $"{timeSinceLastOnline / 86400}d ago";
     }
 
     public PlayerMetrics()
@@ -640,7 +636,7 @@ public class Guild
     public int id;
 
     [JsonProperty]
-    private HashSet<string> invites = new();
+    private HashSet<string> invites = [];
 
     [JsonProperty]
     public RoleInfo[] roles;
@@ -659,7 +655,7 @@ public class Guild
     /// Player uid to info about their membership.
     /// </summary>
     [JsonProperty]
-    private readonly Dictionary<string, MembershipInfo> members = new();
+    private readonly Dictionary<string, MembershipInfo> members = [];
 
     public int MemberCount => members.Count;
 
@@ -672,8 +668,9 @@ public class Guild
     {
         roles ??= InitializeRoles();
 
-        if (!members.TryGetValue(playerUid, out MembershipInfo? memberInfo)) return null;
-        return memberInfo.roleId >= roles.Length ? null : roles[memberInfo.roleId];
+        return !members.TryGetValue(playerUid, out MembershipInfo? memberInfo)
+            ? null
+            : memberInfo.roleId >= roles.Length ? null : roles[memberInfo.roleId];
     }
 
     public RoleInfo? GetRole(int roleId)
@@ -743,33 +740,31 @@ public class Guild
 
     private static RoleInfo[] InitializeRoles()
     {
-        RoleInfo[] roles = new RoleInfo[2];
-        roles[0] = new RoleInfo("Member", 0);
-        roles[1] = new RoleInfo("Founder", 1).Admin();
+        RoleInfo[] roles = [new RoleInfo("Member", 0), new RoleInfo("Founder", 1).Admin()];
         return roles;
     }
 
     public bool AddInvite(string playerUid)
     {
-        invites ??= new HashSet<string>();
+        invites ??= [];
         return invites.Add(playerUid);
     }
 
     public bool RemoveInvite(string playerUid)
     {
-        invites ??= new HashSet<string>();
+        invites ??= [];
         return invites.Remove(playerUid);
     }
 
     public bool IsInvited(string playerUid)
     {
-        invites ??= new HashSet<string>();
+        invites ??= [];
         return invites.Contains(playerUid);
     }
 
     public HashSet<string> GetInvites()
     {
-        invites ??= new HashSet<string>();
+        invites ??= [];
         return invites;
     }
 
