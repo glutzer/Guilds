@@ -85,8 +85,10 @@ public class GuildGui : Gui
 
     public override void PopulateWidgets()
     {
-        WidgetSliceBackground bg = new(null, this, VanillaThemes.OutsetTexture, new Vector4(0.2f, 0.2f, 0.2f, 1f));
+        WidgetSliceBackground bg = new(null, this, VanillaThemes.OutsetTexture, Vector4.One);
         AddWidget(bg.Fixed(0, 0, 200, 200).Alignment(Align.Center));
+
+        VanillaThemes.AddTitleBar(bg, "Guilds");
 
         List<WidgetGuildTab> tabs = [];
         int index = 0;
@@ -95,7 +97,7 @@ public class GuildGui : Gui
             int i = index;
             new WidgetGuildTab(bg, this, (on) =>
             {
-                foreach (WidgetGuildTab tab in tabs) tab.Release();
+                foreach (WidgetGuildTab tab in tabs) tab.Release(false);
                 SwapToPage(i);
             }, true, new Vector4(0.5f, 0f, 0f, 1f), entry.name)
                 .Fixed(0, Scaled(index * 12), 50, 12)

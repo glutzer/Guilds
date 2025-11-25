@@ -8,7 +8,7 @@
   "description": "map game",
   "version": "2.0.0",
   "dependencies": {
-    "nutslib": "3.0.1",
+    "nutslib": "3.0.2",
     "game": ""
   }
 }

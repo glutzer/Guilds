@@ -35,7 +35,7 @@ public class WidgetRightClickableField : WidgetBaseButton
     {
         if (!RenderTools.IsPointInsideScissor(X, Y)) return;
 
-        shader.Uniform("color", state != EnumButtonState.Normal ? new Vector4(0.15f, 0.15f, 0.15f, 1f) : new Vector4(0.1f, 0.1f, 0.1f, 1f));
+        shader.Uniform("color", state != EnumButtonState.Normal ? new Vector4(0.8f, 0.8f, 0.8f, 1f) : new Vector4(0.5f, 0.5f, 0.5f, 1f));
         RenderTools.RenderNineSlice(tex, shader, X, Y, Width, Height);
         shader.Uniform("color", Vector4.One);
 

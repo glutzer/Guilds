@@ -18,7 +18,7 @@ public class WidgetRoleContainer : Widget
 
         if (!ownRole.HasPermissions(GuildPerms.ManageRoles))
         {
-            new WidgetTextLine(this, guildGui, VanillaThemes.Font, "No role permissions.", VanillaThemes.WhitishTextColor, true).Alignment(Align.Center).FixedSize(64, 32);
+            new WidgetTextLine(this, guildGui, VanillaThemes.Font, "No role permissions.", VanillaThemes.WhitishTextColor, true).Alignment(Align.Center).FixedSize(64, 32).FixedPos(0, 128);
             return;
         }
 
@@ -81,7 +81,7 @@ public class RoleSelector : Widget
                 roleSelectionButtons[selectedRoleIndex].Release();
                 selectedRoleIndex = indexOfThis;
                 UpdatePermissions(role, guild.id);
-            }, role.name).Alignment(Align.CenterTop).Fixed(0, Gui.Scaled((i * 12) + 24), 64, 12);
+            }, role.name, role.authority >= ownRole.authority).Alignment(Align.CenterTop).Fixed(0, Gui.Scaled((i * 12) + 24), 64, 12);
 
             // Button will never be able to be selected or let up now.
             if (role.authority >= ownRole.authority) roleSelectionButtons[i].LockDown();

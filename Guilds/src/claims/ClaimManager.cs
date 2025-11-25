@@ -276,14 +276,44 @@ public class ClaimManager : NetworkedGameSystem
         return false;
     }
 
-    public bool IsAdjacentToEmpty(GridPos2d position, int guildId)
+    public bool PassesAdjacencyCheck(GridPos2d position, int guildId)
     {
+        List<GridPos2d> adjacents = [];
+
         foreach (GridPos2d pos in position.Adjacents())
         {
-            if (!claimData.TryGetClaim(pos, out GuildClaim claim) || claim.guildId != guildId) return true;
+            if (!claimData.TryGetClaim(pos, out GuildClaim claim) || claim.guildId != guildId) continue; // Not an adjacent tile.
+            adjacents.Add(pos);
         }
 
-        return false;
+        if (adjacents.Count < 2) return true; // Only one adjacent, always passes.
+
+        Queue<GridPos2d> toCheck = [];
+        HashSet<GridPos2d> visited = [];
+
+        toCheck.Enqueue(adjacents[0]);
+
+        while (toCheck.Count > 0)
+        {
+            GridPos2d current = toCheck.Dequeue();
+            if (current == position) continue;
+            if (visited.Contains(current)) continue;
+            visited.Add(current);
+            if (claimData.TryGetClaim(current, out GuildClaim claim) && claim.guildId == guildId)
+            {
+                foreach (GridPos2d pos in current.Adjacents())
+                {
+                    toCheck.Enqueue(pos);
+                }
+            }
+        }
+
+        foreach (GridPos2d pos in adjacents)
+        {
+            if (!visited.Contains(pos)) return false; // Not reached.
+        }
+
+        return true;
     }
 
     /// <summary>
@@ -314,11 +344,13 @@ public class ClaimManager : NetworkedGameSystem
             {
                 if (claim.guildId != reppedGuild.id) return;
                 int claimCount = claimData.GetClaimCount(reppedGuild);
-                if (claimCount > 1 && GuildsConfig.Instance.onlyClaimAdjacents && !IsAdjacentToEmpty(packet.position, reppedGuild.id))
+
+                if (claimCount > 1 && GuildsConfig.Instance.onlyClaimAdjacents && !PassesAdjacencyCheck(packet.position, reppedGuild.id))
                 {
                     NotificationSystem.SendNotification("May only unclaim border tiles.", player, VanillaThemes.Red);
                     return;
                 }
+
                 claimData.RemoveClaim(packet.position);
                 BroadcastPacket(packet);
             }

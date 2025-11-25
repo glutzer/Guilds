@@ -21,7 +21,7 @@ public class GuildPageGuildRoles : GuildPageEntry
         {
             new WidgetTextLine(parent, parent.Gui, VanillaThemes.Font, "No guild selected.", VanillaThemes.WhitishTextColor)
                 .Alignment(Align.Center)
-                .PercentWidth(1)
+                .PercentWidth(1f)
                 .FixedHeight(12);
 
             return;
@@ -30,7 +30,7 @@ public class GuildPageGuildRoles : GuildPageEntry
         new WidgetRoleContainer(parent, guildGui)
             .Alignment(Align.CenterTop)
             .FixedHeight(16)
-            .PercentWidth(1)
+            .PercentWidth(1f)
             .SetChildSizing(ChildSizing.Height);
     }
 }
