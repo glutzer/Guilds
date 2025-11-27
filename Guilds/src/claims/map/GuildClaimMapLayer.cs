@@ -76,7 +76,7 @@ public class GuildClaimMapLayer : MapLayer
         {
             // Prevent adding off-screen tiles but not entirely sure how it works.
             Vector2 screenPos = TranslateChunkPosToViewPos(claim.position, lastMap);
-            if (screenPos.X < -64 || screenPos.Y < -64 || screenPos.X > MainAPI.RenderWidth + (64 * lastMap.ZoomLevel) || screenPos.Y > MainAPI.RenderWidth + (64 * lastMap.ZoomLevel)) return;
+            if (screenPos.X < -64f || screenPos.Y < -64f || screenPos.X > MainAPI.RenderWidth + (64f * lastMap.ZoomLevel) || screenPos.Y > MainAPI.RenderWidth + (64f * lastMap.ZoomLevel)) return;
         }
 
         Guild? guild = guildManager.guildData.GetGuild(claim.guildId);
