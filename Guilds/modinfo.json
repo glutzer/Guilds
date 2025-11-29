@@ -6,9 +6,9 @@
     "nuts"
   ],
   "description": "map game",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "dependencies": {
-    "nutslib": "3.0.2",
+    "nutslib": "3.0.4",
     "game": ""
   }
 }

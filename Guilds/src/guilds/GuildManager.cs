@@ -71,7 +71,7 @@ public class GuildManager : NetworkedGameSystem
         {
             guildData.isClient = true;
 
-            ScreenManager.hotkeyManager.RegisterHotKey("guild", "Guild Window", (int)GlKeys.V, triggerOnUpAlso: false);
+            ScreenManager.hotkeyManager.RegisterHotKey("guild", "Guild Window", (int)GlKeys.BackSlash, triggerOnUpAlso: false);
             MainAPI.Capi.Input.SetHotKeyHandler("guild", key =>
             {
                 guildGui ??= new GuildGui();
