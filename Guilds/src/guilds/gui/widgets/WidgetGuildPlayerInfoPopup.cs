@@ -24,11 +24,11 @@ public class WidgetGuildPlayerInfoPopup : Widget
             {
                 if (ownRole.HasPermissions(GuildPerms.Kick) && ownRole.authority > targetRole.authority)
                 {
-                    new WidgetHoldDownGuildButton(this, gui, 2, () =>
+                    new WidgetHoldDownGuildButton(this, gui, 2f, () =>
                     {
                         manager.SendPacket(GuildPacket.Create(EnumGuildPacket.Kick, playerUid, guild.id));
                         DeleteSelf();
-                    }, $"Kick From {guild.name}").Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
+                    }, $"Kick From {guild.name}").Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += Gui.Scaled(12));
                 }
             }
 
@@ -40,7 +40,7 @@ public class WidgetGuildPlayerInfoPopup : Widget
                     {
                         manager.SendPacket(GuildPacket.Create(EnumGuildPacket.CancelInvite, playerUid, guild.id, 0));
                         DeleteSelf();
-                    }, $"Cancel {guild.name} Invite").Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
+                    }, $"Cancel {guild.name} Invite").Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += Gui.Scaled(12));
                 }
                 else
                 {
@@ -48,7 +48,7 @@ public class WidgetGuildPlayerInfoPopup : Widget
                     {
                         manager.SendPacket(GuildPacket.Create(EnumGuildPacket.Invite, playerUid, guild.id, 0));
                         DeleteSelf();
-                    }, $"Invite To {guild.name}").Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
+                    }, $"Invite To {guild.name}").Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += Gui.Scaled(12));
                 }
             }
 
@@ -64,7 +64,7 @@ public class WidgetGuildPlayerInfoPopup : Widget
                     {
                         manager.SendPacket(GuildPacket.Create(EnumGuildPacket.Promote, playerUid, guild.id, role.id));
                         DeleteSelf();
-                    }, role.authority >= promoteRole.authority ? $"Promote To {role.name}" : $"Demote To {role.name}").Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
+                    }, role.authority >= promoteRole.authority ? $"Promote To {role.name}" : $"Demote To {role.name}").Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += Gui.Scaled(12));
                 }
 
                 if (ownRole.id == 1) // Founder.
@@ -73,7 +73,7 @@ public class WidgetGuildPlayerInfoPopup : Widget
                     {
                         manager.SendPacket(GuildPacket.Create(EnumGuildPacket.Promote, playerUid, guild.id, 1));
                         DeleteSelf();
-                    }, $"Make Guild Leader").Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += 12);
+                    }, $"Make Guild Leader").Alignment(Align.LeftTop).FixedSize(64, 12).FixedY(heightOffset += Gui.Scaled(12));
                 }
             }
         }

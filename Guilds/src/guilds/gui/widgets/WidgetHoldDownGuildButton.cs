@@ -44,6 +44,8 @@ public class WidgetHoldDownGuildButton : Widget
 
     public override void OnRender(float dt, ShaderGui shader)
     {
+        RenderTools.RenderNineSlice(VanillaThemes.InsetTexture, shader, X, Y, Width, Height);
+
         if (state != EnumButtonState.Active)
         {
             accum -= dt;
