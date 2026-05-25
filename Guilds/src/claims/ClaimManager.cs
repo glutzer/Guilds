@@ -490,10 +490,7 @@ public class ClaimManager : NetworkedGameSystem
 
     public override void OnClose()
     {
-        if (Harmony != null)
-        {
-            Harmony.UnpatchAll();
-            Harmony = null;
-        }
+        Harmony?.UnpatchAll();
+        Harmony = null;
     }
 }

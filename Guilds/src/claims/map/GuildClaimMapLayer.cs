@@ -54,6 +54,18 @@ public class GuildClaimMapLayer : MapLayer
 
     private readonly Dictionary<GridPos2d, RenderableTile> tiles = [];
 
+    private bool buttonHovered;
+    private bool buttonEnabled;
+    private readonly TextObject buttonText = new("Toggle Claiming", VanillaThemes.Font, 10f, VanillaThemes.WhitishTextColor)
+    {
+        Shadow = true
+    };
+
+    public override void OnMapClosedClient()
+    {
+        base.OnMapClosedClient();
+    }
+
     /// <summary>
     /// Update all tiles within bounds.
     /// </summary>
@@ -179,27 +191,56 @@ public class GuildClaimMapLayer : MapLayer
 
         guiShader.Uniform("sideMask", 0);
 
-        if (mapDialog.DialogType != EnumDialogType.HUD)
+        if (buttonEnabled)
         {
-            Vector2 mPos = TranslateChunkPosToViewPos(mousedPos, mapElem);
+            if (mapDialog.DialogType != EnumDialogType.HUD)
+            {
+                Vector2 mPos = TranslateChunkPosToViewPos(mousedPos, mapElem);
 
-            if (32f * mapElem.ZoomLevel > 24f)
-            {
-                guiShader.Uniform("color", MainAPI.Capi.World.Player.Entity.Controls.ShiftKey ? new Vector4(0.9f, 0.4f, 0.4f, 0.6f) : new Vector4(0.4f, 0.9f, 0.4f, 0.6f));
-                RenderTools.RenderNineSlice(VanillaThemes.OutsetTexture, guiShader, mPos.X, mPos.Y, 32f * mapElem.ZoomLevel, 32f * mapElem.ZoomLevel);
-            }
-            else
-            {
-                guiShader.Uniform("color", MainAPI.Capi.World.Player.Entity.Controls.ShiftKey ? new Vector4(0.9f, 0.4f, 0.4f, 0.3f) : new Vector4(0.4f, 0.9f, 0.4f, 0.3f));
-                guiShader.Uniform("sideMask", 15);
-                RenderTools.RenderQuad(guiShader, mPos.X, mPos.Y, 32 * mapElem.ZoomLevel, 32 * mapElem.ZoomLevel);
+                if (32f * mapElem.ZoomLevel > 24f)
+                {
+                    guiShader.Uniform("color", MainAPI.Capi.World.Player.Entity.Controls.ShiftKey ? new Vector4(0.9f, 0.4f, 0.4f, 0.6f) : new Vector4(0.4f, 0.9f, 0.4f, 0.6f));
+                    RenderTools.RenderNineSlice(VanillaThemes.OutsetTexture, guiShader, mPos.X, mPos.Y, 32f * mapElem.ZoomLevel, 32f * mapElem.ZoomLevel);
+                }
+                else
+                {
+                    guiShader.Uniform("color", MainAPI.Capi.World.Player.Entity.Controls.ShiftKey ? new Vector4(0.9f, 0.4f, 0.4f, 0.3f) : new Vector4(0.4f, 0.9f, 0.4f, 0.3f));
+                    guiShader.Uniform("sideMask", 15);
+                    RenderTools.RenderQuad(guiShader, mPos.X, mPos.Y, 32 * mapElem.ZoomLevel, 32 * mapElem.ZoomLevel);
+                }
             }
         }
 
-        guiShader.Uniform("color", Vector4.One);
+        // Render button.
+        if (mapDialog.DialogType != EnumDialogType.HUD)
+        {
+            (Vector2 pos, Vector2 size) dims = GetButtonDimensions(mapElem);
+            buttonText.SetScaleFromWidth(dims.size.X, dims.size.Y, 0.9f, 0.6f);
+
+            guiShader.Uniform("color", buttonHovered ? new Vector4(1.2f, 1.2f, 1.2f, 1f) : new Vector4(1f, 1f, 1f, 1f));
+
+            RenderTools.RenderNineSlice(buttonEnabled ? VanillaThemes.InsetTexture : VanillaThemes.OutsetTexture, guiShader, dims.pos.X, dims.pos.Y, dims.size.X, dims.size.Y);
+
+            guiShader.Uniform("color", Vector4.One);
+
+            ShaderGui textShader = NuttyShaderRegistry.Get<ShaderGui>("gui");
+            textShader.Use();
+            buttonText.RenderCenteredLine(dims.pos.X + (dims.size.X / 2f), dims.pos.Y + (dims.size.Y / 2f), textShader, true);
+        }
 
         RenderTools.EnableDepthTest();
         currentShader?.Use();
+    }
+
+    public static (Vector2, Vector2) GetButtonDimensions(GuiElementMap mapElem)
+    {
+        Vector2 mapElementStart = new((float)mapElem.Bounds.renderX, (float)mapElem.Bounds.renderY);
+        Vector2 mapElementSize = new((float)mapElem.Bounds.InnerWidth, (float)mapElem.Bounds.InnerHeight);
+
+        mapElementStart += mapElementSize * new Vector2(0.8f, 0.95f);
+        mapElementSize -= mapElementSize * new Vector2(0.8f, 0.95f);
+
+        return (mapElementStart, mapElementSize);
     }
 
     public static Vector2 TranslateChunkPosToViewPos(GridPos2d gridPos, GuiElementMap mapElem)
@@ -233,13 +274,31 @@ public class GuildClaimMapLayer : MapLayer
 
             hoverText.AppendLine($"Claimed by {guild.name}");
         }
+
+        (Vector2 pos, Vector2 size) = GetButtonDimensions(mapElem);
+
+        if (Widget.IsInAllBounds(args.X, args.Y, (int)pos.X, (int)pos.Y, (int)size.X, (int)size.Y) && mapDialog?.DialogType == EnumDialogType.HUD == false)
+        {
+            buttonHovered = true;
+            return;
+        }
+
+        buttonHovered = false;
     }
 
     public override void OnMouseUpClient(MouseEvent args, GuiElementMap mapElem)
     {
-        if (args.Button != EnumMouseButton.Middle || !Active) return;
+        if (!Active) return;
 
-        args.Handled = true;
+        if (buttonHovered && mapDialog?.DialogType == EnumDialogType.HUD == false)
+        {
+            // Toggle.
+            buttonEnabled = !buttonEnabled;
+            MainAPI.Capi.Gui.PlaySound("tick");
+            return;
+        }
+
+        if (!buttonEnabled) return;
 
         ClaimPacket packet = new()
         {
